@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #fff1f7;
+  --color-brand-100: #ffe0ee;
+  --color-brand-200: #ffc2dd;
+  --color-brand-300: #ff94c3;
+  --color-brand-400: #ff5fa5;
+  --color-brand-500: #ff3d92;
+  --color-brand-600: #f01a78;
+  --color-brand-700: #cc0d63;
+  --color-surface: #f7f7f8;
+  --color-ink: #0f1415;
+  --color-muted: #6b7280;
+  --color-line: #e5e7eb;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+html, body, #__nuxt {
+  height: 100%;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--color-brand-500); color: white; }
+.btn-primary:hover:not(:disabled) { background: var(--color-brand-600); }
+.btn-ghost { background: white; border: 1px solid var(--color-line); color: var(--color-ink); }
+.btn-ghost:hover:not(:disabled) { background: #fafafa; }
+.btn-danger { background: #fee2e2; color: #b91c1c; }
+
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: white;
+  font-size: 0.875rem;
+  outline: none;
+}
+.input:focus { border-color: var(--color-brand-400); box-shadow: 0 0 0 3px var(--color-brand-100); }
+textarea.input { height: auto; padding: 0.6rem 0.75rem; }
+
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.chip-ok { background: #dcfce7; color: #15803d; }
+.chip-warn { background: #fef3c7; color: #b45309; }
+.chip-err { background: #fee2e2; color: #b91c1c; }
+.chip-neutral { background: #f1f5f9; color: #475569; }
+
+.scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 999px; }

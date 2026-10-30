@@ -1,0 +1,24 @@
+# dependências
+node_modules/
+web/.nuxt/
+web/.output/
+web/.data/
+web/.nitro/
+web/.cache/
+bin/
+
+# go
+api/*.test
+
+# mídia e dados locais
+storage/
+api/storage/
+
+# ambiente
+.env
+.env.*
+!.env.example
+
+# sistema
+.DS_Store
+*.log
