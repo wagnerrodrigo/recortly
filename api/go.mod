@@ -1,4 +1,4 @@
-module github.com/smashcut/smashcut/api
+module github.com/recortly/recortly/api
 
 go 1.24
 

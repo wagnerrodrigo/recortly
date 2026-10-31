@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/smashcut/smashcut/api/internal/video"
+	"github.com/recortly/recortly/api/internal/video"
 )
 
 func (s *Server) handleListTemplates(w http.ResponseWriter, r *http.Request) {

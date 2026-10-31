@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/smashcut/smashcut/api/internal/model"
+	"github.com/recortly/recortly/api/internal/model"
 )
 
 // SourceForOutput devolve a origem de um render_output validando o dono.

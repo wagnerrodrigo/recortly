@@ -1,4 +1,4 @@
-# SmashCut: Plano do Projeto
+# Recortly: Plano do Projeto
 
 Ferramenta interna (uso meu e de um amigo) para transformar vídeos longos em cortes verticais e publicá-los no YouTube Shorts, Instagram Reels e TikTok.
 
@@ -43,7 +43,7 @@ Imagens de referência: `img/` (layout do painel, wizard de templates, cards de 
 Estrutura de pastas prevista:
 
 ```
-smashcut/
+recortly/
 ├─ web/                 # Nuxt 4 (painel)
 ├─ api/                 # Go: HTTP (chi) e handlers
 │  ├─ cmd/api/          # entrypoint da API
@@ -124,9 +124,9 @@ Em `.opencode/skills/`:
 | `vue-patterns` | SkillsMP (ECC) | Composition API e Pinia |
 | `ffmpeg` | SkillsMP (OpenMontage) | Operações de FFmpeg |
 | `video-editing` | SkillsMP (ECC) | Fluxo de edição de vídeo |
-| `smashcut-templates` | Própria | Schema dos templates e engine de variações |
-| `smashcut-publishing` | Própria | Regras de publicação em YouTube, Instagram e TikTok |
-| `smashcut-copyright` | Própria | Origem, licença e crédito obrigatórios |
+| `recortly-templates` | Própria | Schema dos templates e engine de variações |
+| `recortly-publishing` | Própria | Regras de publicação em YouTube, Instagram e TikTok |
+| `recortly-copyright` | Própria | Origem, licença e crédito obrigatórios |
 
 ## 8. Status da implementação
 

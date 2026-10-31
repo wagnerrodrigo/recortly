@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/smashcut/smashcut/api/internal/model"
+	"github.com/recortly/recortly/api/internal/model"
 )
 
 var invalidFileChars = regexp.MustCompile(`[\\/:*?"<>|\x00-\x1f]+`)

@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/smashcut/smashcut/api/internal/video/template"
+	"github.com/recortly/recortly/api/internal/video/template"
 )
 
 type VariationPlan struct {

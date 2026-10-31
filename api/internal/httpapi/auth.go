@@ -13,11 +13,11 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/smashcut/smashcut/api/internal/model"
-	"github.com/smashcut/smashcut/api/internal/store"
+	"github.com/recortly/recortly/api/internal/model"
+	"github.com/recortly/recortly/api/internal/store"
 )
 
-const sessionCookie = "sc_session"
+const sessionCookie = "rc_session"
 
 type ctxKey string
 

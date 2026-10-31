@@ -742,7 +742,7 @@ async function load() {
     if (ai?.configured) {
       aiHint.value = `IA local: ${ai.model} em ${ai.baseUrl}`
     } else {
-      aiHint.value = 'IA não configurada. Defina SMASHCUT_AI_BASE_URL e SMASHCUT_AI_MODEL no .env para gerar frases.'
+      aiHint.value = 'IA não configurada. Defina RECORTLY_AI_BASE_URL e RECORTLY_AI_MODEL no .env para gerar frases.'
     }
     await refreshLayout()
     if (sources.value.length) {

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/smashcut/smashcut/api/internal/model"
-	"github.com/smashcut/smashcut/api/internal/video/template"
+	"github.com/recortly/recortly/api/internal/model"
+	"github.com/recortly/recortly/api/internal/video/template"
 )
 
 func TestPlanDeterministico(t *testing.T) {

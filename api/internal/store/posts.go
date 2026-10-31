@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/smashcut/smashcut/api/internal/model"
+	"github.com/recortly/recortly/api/internal/model"
 )
 
 func (s *Store) CreatePost(ctx context.Context, p model.Post) (model.Post, error) {

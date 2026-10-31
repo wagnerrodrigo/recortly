@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
-	"github.com/smashcut/smashcut/api/internal/model"
-	"github.com/smashcut/smashcut/api/internal/publishers"
-	"github.com/smashcut/smashcut/api/internal/store"
-	"github.com/smashcut/smashcut/api/internal/video"
-	"github.com/smashcut/smashcut/api/internal/video/template"
+	"github.com/recortly/recortly/api/internal/model"
+	"github.com/recortly/recortly/api/internal/publishers"
+	"github.com/recortly/recortly/api/internal/store"
+	"github.com/recortly/recortly/api/internal/video"
+	"github.com/recortly/recortly/api/internal/video/template"
 )
 
 type Worker struct {

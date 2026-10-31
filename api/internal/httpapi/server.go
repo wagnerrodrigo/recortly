@@ -9,10 +9,10 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/smashcut/smashcut/api/internal/config"
-	"github.com/smashcut/smashcut/api/internal/jobs"
-	"github.com/smashcut/smashcut/api/internal/model"
-	"github.com/smashcut/smashcut/api/internal/store"
+	"github.com/recortly/recortly/api/internal/config"
+	"github.com/recortly/recortly/api/internal/jobs"
+	"github.com/recortly/recortly/api/internal/model"
+	"github.com/recortly/recortly/api/internal/store"
 )
 
 type Server struct {

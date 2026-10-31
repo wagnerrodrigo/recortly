@@ -44,7 +44,7 @@ type PhrasesRequest struct {
 // Phrases gera headlines curtas para o template.
 func (c Client) Phrases(ctx context.Context, req PhrasesRequest) ([]string, error) {
 	if !c.Configured() {
-		return nil, errors.New("IA não configurada: defina SMASHCUT_AI_BASE_URL e SMASHCUT_AI_MODEL")
+		return nil, errors.New("IA não configurada: defina RECORTLY_AI_BASE_URL e RECORTLY_AI_MODEL")
 	}
 	count := req.Count
 	if count <= 0 {
@@ -128,7 +128,7 @@ func (c Client) Phrases(ctx context.Context, req PhrasesRequest) ([]string, erro
 	if content == "" {
 		if finishReason == "length" {
 			return nil, fmt.Errorf("o modelo gastou todos os tokens em raciocínio antes de escrever as frases. "+
-				"Aumente SMASHCUT_AI_MAX_TOKENS (atual: %d) ou use um modelo sem raciocínio.", maxTokens)
+				"Aumente RECORTLY_AI_MAX_TOKENS (atual: %d) ou use um modelo sem raciocínio.", maxTokens)
 		}
 		return nil, errors.New("a IA respondeu vazio. Verifique o modelo carregado no LM Studio/Ollama")
 	}

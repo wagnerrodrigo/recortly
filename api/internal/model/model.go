@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/smashcut/smashcut/api/internal/video/template"
+	"github.com/recortly/recortly/api/internal/video/template"
 )
 
 type User struct {

@@ -1,9 +1,9 @@
 ---
-name: smashcut-copyright
-description: Use when handling source videos, licensing or permission fields, credits in captions, or the rule that blocks publishing content without origin data in SmashCut.
+name: recortly-copyright
+description: Use when handling source videos, licensing or permission fields, credits in captions, or the rule that blocks publishing content without origin data in Recortly.
 ---
 
-# SmashCut: Direitos autorais e créditos
+# Recortly: Direitos autorais e créditos
 
 Objetivo: todo vídeo publicado tem origem registrada, crédito visível e possibilidade de remoção rápida.
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/smashcut/smashcut/api/internal/model"
+	"github.com/recortly/recortly/api/internal/model"
 )
 
 const sourceCols = `id, user_id, title, file_path, original_name, size_bytes, duration_ms,

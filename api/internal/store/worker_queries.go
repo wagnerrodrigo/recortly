@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/smashcut/smashcut/api/internal/model"
+	"github.com/recortly/recortly/api/internal/model"
 )
 
 func (s *Store) GetClipForWorker(ctx context.Context, id int64) (model.Clip, error) {

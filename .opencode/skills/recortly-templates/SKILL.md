@@ -1,9 +1,9 @@
 ---
-name: smashcut-templates
-description: Use when designing or implementing SmashCut templates (profile, zones, phrases, media, style, variations), the template JSON schema, or the engine that turns one clip into many rendered variations.
+name: recortly-templates
+description: Use when designing or implementing Recortly templates (profile, zones, phrases, media, style, variations), the template JSON schema, or the engine that turns one clip into many rendered variations.
 ---
 
-# SmashCut: Templates
+# Recortly: Templates
 
 Um template é um JSON que descreve como montar um post vertical a partir de um clip. O wizard do painel edita esse JSON; o worker o transforma em FFmpeg.
 

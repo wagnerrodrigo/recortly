@@ -1,4 +1,4 @@
--- SmashCut: schema inicial
+-- Recortly: schema inicial
 -- Idempotente: pode rodar em todo boot da API.
 
 DO $$ BEGIN CREATE TYPE license_type AS ENUM ('own', 'permission', 'credit'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;

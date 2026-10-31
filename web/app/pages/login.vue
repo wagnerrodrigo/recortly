@@ -8,7 +8,7 @@
           </svg>
         </div>
         <div>
-          <p class="text-xl font-bold leading-tight">SmashCut</p>
+          <p class="text-xl font-bold leading-tight">Recortly</p>
           <p class="text-xs" style="color: var(--color-muted)">Cortes verticais, do bruto ao publicado</p>
         </div>
       </div>
@@ -40,7 +40,7 @@ definePageMeta({ layout: 'auth' })
 
 const route = useRoute()
 const session = useSession()
-const email = ref('eu@smashcut.local')
+const email = ref('eu@recortly.local')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')

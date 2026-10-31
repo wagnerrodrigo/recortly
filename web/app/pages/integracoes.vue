@@ -3,7 +3,7 @@
     <div>
       <h1 class="text-2xl font-bold tracking-tight">Integrações</h1>
       <p class="mt-1 text-sm" style="color: var(--color-muted)">
-        Conecte apenas contas próprias. O SmashCut usa as APIs oficiais de cada plataforma.
+        Conecte apenas contas próprias. O Recortly usa as APIs oficiais de cada plataforma.
       </p>
     </div>
 
@@ -41,7 +41,7 @@
         <li>Crie um projeto no Google Cloud e ative a YouTube Data API v3.</li>
         <li>Crie credenciais OAuth do tipo "Web application".</li>
         <li>Adicione <code class="rounded bg-zinc-100 px-1">http://localhost:3000/api/oauth/youtube/callback</code> como URI de redirecionamento.</li>
-        <li>Preencha <code class="rounded bg-zinc-100 px-1">SMASHCUT_YOUTUBE_CLIENT_ID</code> e <code class="rounded bg-zinc-100 px-1">SMASHCUT_YOUTUBE_CLIENT_SECRET</code> no <code class="rounded bg-zinc-100 px-1">.env</code> e reinicie a API.</li>
+        <li>Preencha <code class="rounded bg-zinc-100 px-1">RECORTLY_YOUTUBE_CLIENT_ID</code> e <code class="rounded bg-zinc-100 px-1">RECORTLY_YOUTUBE_CLIENT_SECRET</code> no <code class="rounded bg-zinc-100 px-1">.env</code> e reinicie a API.</li>
         <li>Instagram e TikTok exigem app aprovado nas plataformas antes de publicar de verdade.</li>
       </ol>
     </section>

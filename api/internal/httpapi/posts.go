@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/smashcut/smashcut/api/internal/model"
+	"github.com/recortly/recortly/api/internal/model"
 )
 
 func (s *Server) handleCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func (s *Server) handleYouTubeStart(w http.ResponseWriter, r *http.Request) {
 	u := userFrom(r)
 	if s.Cfg.YouTubeClientID == "" || s.Cfg.YouTubeClientSecret == "" {
 		writeErr(w, http.StatusNotImplemented,
-			"configure SMASHCUT_YOUTUBE_CLIENT_ID e SMASHCUT_YOUTUBE_CLIENT_SECRET")
+			"configure RECORTLY_YOUTUBE_CLIENT_ID e RECORTLY_YOUTUBE_CLIENT_SECRET")
 		return
 	}
 	q := url.Values{}

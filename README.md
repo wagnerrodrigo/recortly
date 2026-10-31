@@ -1,4 +1,4 @@
-# SmashCut
+# Recortly
 
 Ferramenta pessoal para transformar vídeos longos em cortes verticais (9:16) e publicar no YouTube Shorts, Instagram Reels e TikTok.
 
@@ -20,7 +20,7 @@ make dev               # sobe API (:8080), worker e frontend (:3000)
 ```
 
 Abra http://localhost:3000 e entre com um dos usuários do `.env`
-(padrão: `eu@smashcut.local` / `smashcut123`). Se a porta 3000 estiver ocupada,
+(padrão: `eu@recortly.local` / `recortly123`). Se a porta 3000 estiver ocupada,
 o script usa a próxima livre (3001, 3002...) e mostra no terminal.
 
 > As portas do Postgres (5433) e Redis (6380) foram escolhidas para não conflitar com outros projetos locais.
@@ -75,19 +75,19 @@ PLANO.md            # escopo, fases e decisões
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `SMASHCUT_DATABASE_URL` | `postgres://smashcut:smashcut@localhost:5433/smashcut` | Banco |
-| `SMASHCUT_REDIS_ADDR` | `localhost:6380` | Redis da fila |
-| `SMASHCUT_USERS` | 2 usuários de exemplo | `email:senha:Nome|email:senha:Nome` |
-| `SMASHCUT_STORAGE_DIR` | `./storage` | Vídeos de entrada e saída |
-| `SMASHCUT_RENDER_CONCURRENCY` | `1` | Renders simultâneos |
-| `SMASHCUT_YOUTUBE_CLIENT_ID` | vazio | OAuth do YouTube |
-| `SMASHCUT_YOUTUBE_CLIENT_SECRET` | vazio | OAuth do YouTube |
-| `SMASHCUT_YOUTUBE_REDIRECT` | `http://localhost:3000/api/oauth/youtube/callback` | Redirect |
-| `SMASHCUT_TOKEN_KEY` | valor de dev | Assina o `state` do OAuth |
-| `SMASHCUT_AI_BASE_URL` | `http://localhost:1234/v1` | API de IA compatível com OpenAI |
-| `SMASHCUT_AI_MODEL` | `gpt-oss-20b` | Modelo usado nas frases |
-| `SMASHCUT_AI_MAX_TOKENS` | `3000` | Limite de resposta (modelos de raciocínio precisam de folga) |
-| `SMASHCUT_AI_REASONING_EFFORT` | `low` | Esforço de raciocínio (low/medium/high) |
+| `RECORTLY_DATABASE_URL` | `postgres://recortly:recortly@localhost:5433/recortly` | Banco |
+| `RECORTLY_REDIS_ADDR` | `localhost:6380` | Redis da fila |
+| `RECORTLY_USERS` | 2 usuários de exemplo | `email:senha:Nome|email:senha:Nome` |
+| `RECORTLY_STORAGE_DIR` | `./storage` | Vídeos de entrada e saída |
+| `RECORTLY_RENDER_CONCURRENCY` | `1` | Renders simultâneos |
+| `RECORTLY_YOUTUBE_CLIENT_ID` | vazio | OAuth do YouTube |
+| `RECORTLY_YOUTUBE_CLIENT_SECRET` | vazio | OAuth do YouTube |
+| `RECORTLY_YOUTUBE_REDIRECT` | `http://localhost:3000/api/oauth/youtube/callback` | Redirect |
+| `RECORTLY_TOKEN_KEY` | valor de dev | Assina o `state` do OAuth |
+| `RECORTLY_AI_BASE_URL` | `http://localhost:1234/v1` | API de IA compatível com OpenAI |
+| `RECORTLY_AI_MODEL` | `gpt-oss-20b` | Modelo usado nas frases |
+| `RECORTLY_AI_MAX_TOKENS` | `3000` | Limite de resposta (modelos de raciocínio precisam de folga) |
+| `RECORTLY_AI_REASONING_EFFORT` | `low` | Esforço de raciocínio (low/medium/high) |
 
 ## IA local (frases)
 
@@ -95,19 +95,19 @@ O passo **Frases** pode gerar headlines com o modelo rodando na sua máquina:
 
 ```bash
 # LM Studio: ative o servidor local (Developer → Start Server) e use o id exato do modelo
-SMASHCUT_AI_BASE_URL=http://localhost:1234/v1
-SMASHCUT_AI_MODEL=openai/gpt-oss-20b   # confira o id em /v1/models
+RECORTLY_AI_BASE_URL=http://localhost:1234/v1
+RECORTLY_AI_MODEL=openai/gpt-oss-20b   # confira o id em /v1/models
 
 # Ollama
-SMASHCUT_AI_BASE_URL=http://localhost:11434/v1
-SMASHCUT_AI_MODEL=gpt-oss:20b
+RECORTLY_AI_BASE_URL=http://localhost:11434/v1
+RECORTLY_AI_MODEL=gpt-oss:20b
 ```
 
 Sem o servidor ligado, a tela mostra a mensagem de erro e o restante do fluxo continua funcionando.
 Você pode conferir o status em `GET /api/ai/status`.
 
 Se a resposta vier vazia com `finish_reason: length`, o modelo gastou os tokens em raciocínio.
-Aumente `SMASHCUT_AI_MAX_TOKENS` (ex.: 4000) ou reduza `SMASHCUT_AI_REASONING_EFFORT`.
+Aumente `RECORTLY_AI_MAX_TOKENS` (ex.: 4000) ou reduza `RECORTLY_AI_REASONING_EFFORT`.
 
 ## Direitos autorais
 

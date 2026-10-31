@@ -3,9 +3,9 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/smashcut/smashcut/api/internal/ai"
-	"github.com/smashcut/smashcut/api/internal/video"
-	"github.com/smashcut/smashcut/api/internal/video/template"
+	"github.com/recortly/recortly/api/internal/ai"
+	"github.com/recortly/recortly/api/internal/video"
+	"github.com/recortly/recortly/api/internal/video/template"
 )
 
 func (s *Server) handlePresets(w http.ResponseWriter, r *http.Request) {

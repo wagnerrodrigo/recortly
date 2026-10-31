@@ -1,9 +1,9 @@
 ---
-name: smashcut-publishing
-description: Use when implementing OAuth connections, scheduling, or publishing SmashCut clips to YouTube Shorts, Instagram Reels, or TikTok through official APIs.
+name: recortly-publishing
+description: Use when implementing OAuth connections, scheduling, or publishing Recortly clips to YouTube Shorts, Instagram Reels, or TikTok through official APIs.
 ---
 
-# SmashCut: Publicação
+# Recortly: Publicação
 
 Use **somente APIs oficiais**. Não automatize o app/site das redes.
 
@@ -22,7 +22,7 @@ type Publisher interface {
 type PublishInput struct {
     VideoPath   string
     Title       string
-    Description string    // deve incluir crédito de origem (ver smashcut-copyright)
+    Description string    // deve incluir crédito de origem (ver recortly-copyright)
     ScheduledAt *time.Time
     Visibility  string    // public | unlisted | private
 }
@@ -63,7 +63,7 @@ type PublishResult struct {
 ## Agendamento
 
 - Job `publish` no BullMQ com `delay` até `scheduledAt`.
-- Antes de publicar, verificar de novo que o render tem origem e licença preenchidas (`smashcut-copyright`).
+- Antes de publicar, verificar de novo que o render tem origem e licença preenchidas (`recortly-copyright`).
 - Se a publicação falhar, `posts.status = failed` com erro legível e botão de "tentar de novo".
 
 ## Testes

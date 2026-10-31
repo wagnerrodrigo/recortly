@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/smashcut/smashcut/api/internal/model"
+	"github.com/recortly/recortly/api/internal/model"
 )
 
 func (s *Store) CreateRender(ctx context.Context, clipID int64, templateID *int64, variants int) (model.Render, error) {

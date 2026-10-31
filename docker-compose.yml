@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: smashcut
-      POSTGRES_PASSWORD: smashcut
-      POSTGRES_DB: smashcut
+      POSTGRES_USER: recortly
+      POSTGRES_PASSWORD: recortly
+      POSTGRES_DB: recortly
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smashcut -d smashcut"]
+      test: ["CMD-SHELL", "pg_isready -U recortly -d recortly"]
       interval: 5s
       timeout: 3s
       retries: 10

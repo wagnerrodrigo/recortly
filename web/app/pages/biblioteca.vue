@@ -79,7 +79,7 @@
       <form class="card max-h-[90vh] w-full max-w-lg overflow-y-auto p-6" @submit.prevent="saveMeta">
         <h2 class="text-lg font-semibold">Origem e licença</h2>
         <p class="mt-1 text-xs" style="color: var(--color-muted)">
-          Sem esses dados o SmashCut bloqueia a publicação. Use apenas conteúdo próprio ou com permissão.
+          Sem esses dados o Recortly bloqueia a publicação. Use apenas conteúdo próprio ou com permissão.
         </p>
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
           <div class="sm:col-span-2">

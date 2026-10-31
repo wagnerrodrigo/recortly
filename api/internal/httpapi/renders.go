@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/smashcut/smashcut/api/internal/store"
+	"github.com/recortly/recortly/api/internal/store"
 )
 
 func (s *Server) handleCreateRender(w http.ResponseWriter, r *http.Request) {

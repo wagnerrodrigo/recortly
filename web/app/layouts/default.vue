@@ -11,7 +11,7 @@
             <path d="M4 6h16M4 12h10M4 18h7" stroke-linecap="round" />
           </svg>
         </div>
-        <span class="text-lg font-bold tracking-tight">SmashCut</span>
+        <span class="text-lg font-bold tracking-tight">Recortly</span>
       </div>
 
       <p class="px-5 pb-2 pt-2 text-[11px] font-semibold uppercase tracking-widest" style="color: var(--color-muted)">Geral</p>

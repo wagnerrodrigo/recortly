@@ -12,10 +12,10 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/smashcut/smashcut/api/internal/config"
-	"github.com/smashcut/smashcut/api/internal/httpapi"
-	"github.com/smashcut/smashcut/api/internal/jobs"
-	"github.com/smashcut/smashcut/api/internal/store"
+	"github.com/recortly/recortly/api/internal/config"
+	"github.com/recortly/recortly/api/internal/httpapi"
+	"github.com/recortly/recortly/api/internal/jobs"
+	"github.com/recortly/recortly/api/internal/store"
 )
 
 func main() {

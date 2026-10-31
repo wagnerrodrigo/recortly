@@ -1,6 +1,6 @@
 package video
 
-import "github.com/smashcut/smashcut/api/internal/video/template"
+import "github.com/recortly/recortly/api/internal/video/template"
 
 // Aliases para simplificar o uso no worker e na API.
 type TemplateSpec = template.Spec

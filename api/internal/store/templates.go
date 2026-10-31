@@ -6,8 +6,8 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/smashcut/smashcut/api/internal/model"
-	"github.com/smashcut/smashcut/api/internal/video/template"
+	"github.com/recortly/recortly/api/internal/model"
+	"github.com/recortly/recortly/api/internal/video/template"
 )
 
 func (s *Store) CreateTemplate(ctx context.Context, userID int64, name string, spec template.Spec) (model.Template, error) {

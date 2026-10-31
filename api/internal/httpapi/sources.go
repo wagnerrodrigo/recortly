@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/smashcut/smashcut/api/internal/model"
-	"github.com/smashcut/smashcut/api/internal/store"
-	"github.com/smashcut/smashcut/api/internal/video"
+	"github.com/recortly/recortly/api/internal/model"
+	"github.com/recortly/recortly/api/internal/store"
+	"github.com/recortly/recortly/api/internal/video"
 )
 
 const maxUploadBytes = 2 << 30 // 2 GiB

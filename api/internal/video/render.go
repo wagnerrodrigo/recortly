@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/smashcut/smashcut/api/internal/model"
-	"github.com/smashcut/smashcut/api/internal/video/template"
+	"github.com/recortly/recortly/api/internal/model"
+	"github.com/recortly/recortly/api/internal/video/template"
 )
 
 type ProbeInfo struct {

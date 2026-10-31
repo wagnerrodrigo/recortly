@@ -12,9 +12,9 @@ if [ -f .env ]; then
   set +a
 fi
 
-export SMASHCUT_DATABASE_URL="${SMASHCUT_DATABASE_URL:-postgres://smashcut:smashcut@localhost:5433/smashcut?sslmode=disable}"
-export SMASHCUT_REDIS_ADDR="${SMASHCUT_REDIS_ADDR:-localhost:6380}"
-export SMASHCUT_STORAGE_DIR="${SMASHCUT_STORAGE_DIR:-$ROOT/storage}"
+export RECORTLY_DATABASE_URL="${RECORTLY_DATABASE_URL:-postgres://recortly:recortly@localhost:5433/recortly?sslmode=disable}"
+export RECORTLY_REDIS_ADDR="${RECORTLY_REDIS_ADDR:-localhost:6380}"
+export RECORTLY_STORAGE_DIR="${RECORTLY_STORAGE_DIR:-$ROOT/storage}"
 export NUXT_API_PROXY_TARGET="${NUXT_API_PROXY_TARGET:-http://localhost:8080}"
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
@@ -49,7 +49,7 @@ docker compose up -d
 
 echo "→ Aguardando o banco..."
 for _ in $(seq 1 30); do
-  if docker compose exec -T postgres pg_isready -U smashcut -d smashcut >/dev/null 2>&1; then
+  if docker compose exec -T postgres pg_isready -U recortly -d recortly >/dev/null 2>&1; then
     break
   fi
   sleep 1
@@ -98,5 +98,5 @@ echo "→ Frontend em http://localhost:$WEB_PORT"
 PIDS+=($!)
 
 echo ""
-echo "Pronto. Login: eu@smashcut.local / smashcut123 (troque no .env)"
+echo "Pronto. Login: eu@recortly.local / recortly123 (troque no .env)"
 wait

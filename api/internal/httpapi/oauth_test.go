@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smashcut/smashcut/api/internal/config"
+	"github.com/recortly/recortly/api/internal/config"
 )
 
 func testServer() *Server {
