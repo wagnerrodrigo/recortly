@@ -34,9 +34,12 @@
       <section class="card p-5">
         <!-- 1. PERFIL -->
         <div v-if="step === 0" class="space-y-5">
-          <div>
-            <h2 class="font-semibold">Perfil do card</h2>
-            <p class="text-xs" style="color: var(--color-muted)">Aparece no topo ou embaixo do vídeo, como um post.</p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="font-semibold">Perfil do card</h2>
+              <p class="text-xs" style="color: var(--color-muted)">Aparece no topo ou embaixo do vídeo, como um post.</p>
+            </div>
+            <button class="btn btn-ghost h-8 shrink-0 px-3 text-xs" @click="resetPerfil">Restaurar padrão</button>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
@@ -67,6 +70,28 @@
             <input v-model="spec.profile.verified" type="checkbox" class="h-4 w-4 accent-pink-500" />
             Mostrar selo de verificado
           </label>
+
+          <div class="rounded-xl bg-zinc-50 p-4">
+            <div class="flex items-center gap-2">
+              <span class="rounded-md px-2 py-0.5 text-[11px] font-bold text-white" style="background: var(--color-brand-500)">AVATAR</span>
+              <p class="text-sm font-semibold">Avatar / logo do perfil</p>
+            </div>
+            <p class="mt-1 text-xs" style="color: var(--color-muted)">
+              O círculo do perfil. Sem imagem, aparecem as iniciais do nome.
+            </p>
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+              <input ref="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" @change="uploadAvatar" />
+              <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-[#2B2B31] text-sm font-bold text-white">
+                <img v-if="spec.profile.avatar" :src="`/api/logos/${spec.profile.avatar}`" alt="avatar" class="h-full w-full object-cover" />
+                <span v-else>{{ avatarInitials }}</span>
+              </div>
+              <button class="btn btn-ghost h-9 text-xs" :disabled="avatarUploading" @click="avatarInput?.click()">
+                {{ avatarUploading ? 'Enviando...' : spec.profile.avatar ? 'Trocar imagem' : 'Enviar imagem' }}
+              </button>
+              <button v-if="spec.profile.avatar" class="text-xs text-red-600" @click="spec.profile.avatar = ''">Remover</button>
+            </div>
+            <p v-if="avatarError" class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ avatarError }}</p>
+          </div>
 
           <div class="rounded-xl bg-zinc-50 p-4">
             <p class="mb-3 text-xs font-semibold uppercase tracking-wide" style="color: var(--color-muted)">Aparência do card</p>
@@ -118,8 +143,9 @@
             >
               <div class="flex items-center gap-3">
                 <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold">{{ i + 1 }}</span>
-                <select v-model="z.type" class="input h-9 max-w-[160px]">
+                <select v-model="z.type" class="input h-9 max-w-[150px]" @change="onZoneType(z)">
                   <option value="video">Vídeo</option>
+                  <option value="image">Imagem</option>
                   <option value="blank">Espaço vazio</option>
                 </select>
                 <div class="flex-1">
@@ -128,15 +154,52 @@
                 <span class="w-12 text-right text-xs" style="color: var(--color-muted)">{{ Math.round(zonePercent(i)) }}%</span>
                 <button class="text-xs text-red-600" :disabled="spec.zones.length === 1" @click="removeZone(i)">×</button>
               </div>
-              <div v-if="z.type === 'video'" class="mt-2 flex items-center gap-3 pl-10">
-                <label class="text-[11px]" style="color: var(--color-muted)">Cantos ({{ z.radius }}px)</label>
-                <input v-model.number="z.radius" type="range" min="0" max="48" class="w-32 accent-pink-500" />
+
+              <div v-if="z.type === 'video'" class="mt-3 flex flex-wrap items-center gap-3 pl-10">
+                <div class="min-w-[200px] flex-1">
+                  <label class="label">Vídeo desta zona</label>
+                  <select
+                    :value="z.sourceId || 0"
+                    class="input h-9"
+                    @change="z.sourceId = Number(($event.target as HTMLSelectElement).value) || null"
+                  >
+                    <option :value="0">Vídeo principal (o corte escolhido)</option>
+                    <option v-for="s in otherSources" :key="s.id" :value="s.id">{{ s.title }}</option>
+                  </select>
+                </div>
+                <div class="w-36">
+                  <label class="label">Cantos ({{ z.radius }}px)</label>
+                  <input v-model.number="z.radius" type="range" min="0" max="48" class="w-full accent-pink-500" />
+                </div>
+              </div>
+
+              <div v-if="z.type === 'image'" class="mt-3 flex flex-wrap items-center gap-3 pl-10">
+                <input
+                  :ref="(el) => setImageInput(i, el as HTMLInputElement | null)"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  class="hidden"
+                  @change="uploadZoneImage(i, $event)"
+                />
+                <button class="btn btn-ghost h-9 text-xs" :disabled="uploadingZone === i" @click="pickZoneImage(i)">
+                  {{ uploadingZone === i ? 'Enviando...' : z.imagePath ? 'Trocar imagem' : 'Enviar imagem' }}
+                </button>
+                <img v-if="z.imagePath" :src="`/api/images/${z.imagePath}`" alt="" class="h-12 w-12 rounded border object-cover" />
+                <button v-if="z.imagePath" class="text-xs text-red-600" @click="z.imagePath = ''">Remover</button>
+                <div class="w-36">
+                  <label class="label">Ajuste</label>
+                  <select v-model="z.fit" class="input h-9">
+                    <option value="contain">Caber inteira</option>
+                    <option value="cover">Preencher</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             <button class="btn btn-ghost text-xs" @click="addZone('video')">+ Zona de vídeo</button>
+            <button class="btn btn-ghost text-xs" @click="addZone('image')">+ Zona de imagem</button>
             <button class="btn btn-ghost text-xs" @click="addZone('blank')">+ Espaço vazio</button>
           </div>
           <p v-if="spec.zones.filter((z: any) => z.type === 'video').length === 0" class="text-xs text-red-600">
@@ -274,9 +337,12 @@
 
         <!-- 5. ESTILO -->
         <div v-if="step === 4" class="space-y-5">
-          <div>
-            <h2 class="font-semibold">Estilo do texto</h2>
-            <p class="text-xs" style="color: var(--color-muted)">Fonte, cor e posição da headline sobre o vídeo.</p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="font-semibold">Estilo do texto</h2>
+              <p class="text-xs" style="color: var(--color-muted)">Fonte, cor, posição da headline e logo.</p>
+            </div>
+            <button class="btn btn-ghost h-8 shrink-0 px-3 text-xs" @click="resetEstilo">Restaurar padrão</button>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
@@ -331,48 +397,6 @@
 
           <div class="rounded-xl bg-zinc-50 p-4">
             <label class="flex items-center gap-2 text-sm font-medium">
-              <input v-model="spec.logo.enabled" type="checkbox" class="h-4 w-4 accent-pink-500" />
-              Mostrar uma logo pequena no vídeo
-            </label>
-            <div v-if="spec.logo.enabled" class="mt-3 space-y-3">
-              <div class="flex flex-wrap items-center gap-3">
-                <input ref="logoInput" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" @change="uploadLogo" />
-                <button class="btn btn-ghost h-9 text-xs" :disabled="logoUploading" @click="logoInput?.click()">
-                  {{ logoUploading ? 'Enviando...' : spec.logo.path ? 'Trocar logo' : 'Enviar logo' }}
-                </button>
-                <img
-                  v-if="spec.logo.path"
-                  :src="`/api/logos/${spec.logo.path}`"
-                  alt="logo"
-                  class="h-10 w-auto rounded border bg-white object-contain p-1"
-                />
-                <button v-if="spec.logo.path" class="text-xs text-red-600" @click="spec.logo.path = ''">Remover</button>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <label class="label">Posição</label>
-                  <select v-model="spec.logo.position" class="input h-9">
-                    <option value="top-left">Superior esquerda</option>
-                    <option value="top-right">Superior direita</option>
-                    <option value="bottom-left">Inferior esquerda</option>
-                    <option value="bottom-right">Inferior direita</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="label">Tamanho ({{ spec.logo.size }}px)</label>
-                  <input v-model.number="spec.logo.size" type="range" min="40" max="400" class="w-full accent-pink-500" />
-                </div>
-                <div>
-                  <label class="label">Opacidade ({{ Math.round(spec.logo.opacity * 100) }}%)</label>
-                  <input v-model.number="spec.logo.opacity" type="range" min="0.2" max="1" step="0.05" class="w-full accent-pink-500" />
-                </div>
-              </div>
-              <p v-if="logoError" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ logoError }}</p>
-            </div>
-          </div>
-
-          <div class="rounded-xl bg-zinc-50 p-4">
-            <label class="flex items-center gap-2 text-sm font-medium">
               <input v-model="spec.text.strokeEnabled" type="checkbox" class="h-4 w-4 accent-pink-500" />
               Contorno no texto
             </label>
@@ -391,11 +415,14 @@
 
         <!-- 6. VARIAÇÕES -->
         <div v-if="step === 5" class="space-y-5">
-          <div>
-            <h2 class="font-semibold">Variações</h2>
-            <p class="text-xs" style="color: var(--color-muted)">
-              Cada geração usa uma seed nova, então as variações nunca saem iguais.
-            </p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="font-semibold">Variações</h2>
+              <p class="text-xs" style="color: var(--color-muted)">
+                Cada geração usa uma seed nova, então as variações nunca saem iguais.
+              </p>
+            </div>
+            <button class="btn btn-ghost h-8 shrink-0 px-3 text-xs" @click="resetVariacoes">Restaurar padrão</button>
           </div>
           <div class="grid gap-4 sm:grid-cols-3">
             <div>
@@ -512,6 +539,7 @@
             :layout="layout"
             :headline="previewHeadline"
             :media-url="source?.mediaUrl"
+            :media-by-id="mediaById"
           />
           <p class="mt-3 text-center text-[11px]" style="color: var(--color-muted)">
             Aproximado. O arquivo final é renderizado pelo FFmpeg.
@@ -556,9 +584,23 @@ const aiLoading = ref(false)
 const aiError = ref('')
 const aiHint = ref('')
 const newPhrase = ref('')
-const logoInput = ref<HTMLInputElement | null>(null)
-const logoUploading = ref(false)
-const logoError = ref('')
+const avatarInput = ref<HTMLInputElement | null>(null)
+const avatarUploading = ref(false)
+const avatarError = ref('')
+const avatarInitials = computed(() => {
+  const name = spec.value.profile?.name || 'P'
+  return name.split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()
+})
+
+const uploadingZone = ref(-1)
+const zoneImageInputs = new Map<number, HTMLInputElement>()
+
+const otherSources = computed(() => sources.value)
+const mediaById = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const s of sources.value) map[String(s.id)] = s.mediaUrl
+  return map
+})
 
 const render = ref<any>(null)
 const generating = ref(false)
@@ -589,8 +631,68 @@ function applyZonePreset(id: string) {
   spec.value.zones = preset.zones.map((z) => ({ ...z }))
 }
 
-function addZone(type: 'video' | 'blank') {
-  spec.value.zones.push({ type, weight: 0.5, radius: type === 'video' ? 16 : 0, fit: 'cover' })
+function addZone(type: 'video' | 'image' | 'blank') {
+  spec.value.zones.push({
+    type,
+    weight: 0.5,
+    radius: type === 'blank' ? 0 : 16,
+    fit: type === 'image' ? 'contain' : 'cover',
+    sourceId: null,
+    imagePath: '',
+  })
+}
+
+function onZoneType(z: any) {
+  if (z.type !== 'video') z.sourceId = null
+  if (z.type !== 'image') z.imagePath = ''
+  if (z.type === 'image' && !z.fit) z.fit = 'contain'
+}
+
+function setImageInput(i: number, el: HTMLInputElement | null) {
+  if (el) zoneImageInputs.set(i, el)
+  else zoneImageInputs.delete(i)
+}
+
+function pickZoneImage(i: number) {
+  zoneImageInputs.get(i)?.click()
+}
+
+async function uploadZoneImage(i: number, ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  uploadingZone.value = i
+  error.value = ''
+  try {
+    const form = new FormData()
+    form.append('image', file)
+    const res = await $fetch<{ path: string }>('/api/uploads/image', { method: 'POST', body: form })
+    spec.value.zones[i].imagePath = res.path
+    spec.value.zones[i].type = 'image'
+  } catch (e) {
+    error.value = errorMessage(e)
+  } finally {
+    uploadingZone.value = -1
+    input.value = ''
+  }
+}
+
+function clone<T>(v: T): T {
+  return JSON.parse(JSON.stringify(v))
+}
+
+function resetPerfil() {
+  spec.value.profile = clone(defaultSpec().profile)
+}
+
+function resetEstilo() {
+  const d = defaultSpec()
+  spec.value.text = clone(d.text)
+  spec.value.canvas = clone(d.canvas)
+}
+
+function resetVariacoes() {
+  spec.value.variations = clone(defaultSpec().variations)
 }
 
 function removeZone(i: number) {
@@ -701,22 +803,21 @@ function addPhrase() {
   newPhrase.value = ''
 }
 
-async function uploadLogo(ev: Event) {
+async function uploadAvatar(ev: Event) {
   const file = (ev.target as HTMLInputElement).files?.[0]
   if (!file) return
-  logoUploading.value = true
-  logoError.value = ''
+  avatarUploading.value = true
+  avatarError.value = ''
   try {
     const form = new FormData()
     form.append('logo', file)
     const res = await $fetch<{ path: string }>('/api/uploads/logo', { method: 'POST', body: form })
-    spec.value.logo.path = res.path
-    spec.value.logo.enabled = true
+    spec.value.profile.avatar = res.path
   } catch (e) {
-    logoError.value = errorMessage(e)
+    avatarError.value = errorMessage(e)
   } finally {
-    logoUploading.value = false
-    if (logoInput.value) logoInput.value.value = ''
+    avatarUploading.value = false
+    if (avatarInput.value) avatarInput.value.value = ''
   }
 }
 

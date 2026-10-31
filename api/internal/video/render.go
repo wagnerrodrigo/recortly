@@ -90,6 +90,19 @@ type RenderInput struct {
 	HasAudio   bool
 	FontPath   string
 	LogoPath   string
+	AvatarPath string
+	// ExtraSources mapeia sourceID -> caminho do arquivo (zonas de vídeo
+	// que não usam o vídeo principal).
+	ExtraSources map[int64]string
+	// ImagesDir é a pasta com imagens usadas nas zonas de imagem.
+	ImagesDir string
+}
+
+type renderInput struct {
+	path string
+	kind string // main | video | image | logo
+	seek bool
+	loop bool
 }
 
 // BuildArgs monta o comando de FFmpeg para uma variação.
@@ -116,32 +129,101 @@ func BuildArgs(in RenderInput) ([]string, error) {
 	offX := clamp01(in.Plan.OffsetX)
 	offY := clamp01(in.Plan.OffsetY)
 
-	srcVideoCount := 0
+	if len(spec.Zones) == 0 {
+		return nil, errors.New("template sem zonas")
+	}
+	contentZones := 0
 	for _, z := range spec.Zones {
-		if z.Type == "video" {
-			srcVideoCount++
+		if z.Type == "video" || z.Type == "image" {
+			contentZones++
 		}
 	}
-	if srcVideoCount == 0 {
-		return nil, errors.New("template sem zona de vídeo")
+	if contentZones == 0 {
+		return nil, errors.New("template sem zona de conteúdo (vídeo ou imagem)")
 	}
 
+	// ---- inputs ----
+	inputs := []renderInput{{path: in.SourcePath, kind: "main", seek: true}}
+	extraByKey := map[string]int{}
+	zoneInput := make([]int, len(layout.Zones))
+	mainVideoZones := 0
+
+	for i, z := range spec.Zones {
+		switch z.Type {
+		case "video":
+			srcID := int64(0)
+			if z.SourceID != nil {
+				srcID = *z.SourceID
+			}
+			if srcID != 0 {
+				if path, ok := in.ExtraSources[srcID]; ok && path != "" {
+					key := fmt.Sprintf("s%d", srcID)
+					idx, exists := extraByKey[key]
+					if !exists {
+						idx = len(inputs)
+						inputs = append(inputs, renderInput{path: path, kind: "video", seek: true, loop: true})
+						extraByKey[key] = idx
+					}
+					zoneInput[i] = idx
+					continue
+				}
+			}
+			zoneInput[i] = 0
+			mainVideoZones++
+		case "image":
+			path := ""
+			if z.ImagePath != "" && in.ImagesDir != "" {
+				candidate := filepath.Join(in.ImagesDir, filepath.Base(z.ImagePath))
+				if _, err := os.Stat(candidate); err == nil {
+					path = candidate
+				}
+			}
+			if path == "" {
+				zoneInput[i] = -1
+				continue
+			}
+			key := "img:" + path
+			idx, exists := extraByKey[key]
+			if !exists {
+				idx = len(inputs)
+				inputs = append(inputs, renderInput{path: path, kind: "image", loop: true})
+				extraByKey[key] = idx
+			}
+			zoneInput[i] = idx
+		default:
+			zoneInput[i] = -1
+		}
+	}
+
+	useAvatar := spec.Profile.Avatar != "" && in.AvatarPath != "" && spec.Profile.Position != "hidden"
+	if useAvatar {
+		if _, err := os.Stat(in.AvatarPath); err != nil {
+			useAvatar = false
+		}
+	}
+	avatarIdx := -1
+	if useAvatar {
+		avatarIdx = len(inputs)
+		inputs = append(inputs, renderInput{path: in.AvatarPath, kind: "image"})
+	}
+
+	// ---- filters ----
 	chain := []string{}
 	labels := make([]string, len(layout.Zones))
 
-	// Cada zona de vídeo recebe uma cópia do stream original.
-	videoSource := "0:v"
-	if srcVideoCount > 1 {
-		splits := make([]string, 0, srcVideoCount)
-		for i := 0; i < srcVideoCount; i++ {
-			splits = append(splits, fmt.Sprintf("vs%d", i))
+	mainSplit := map[int]string{}
+	if mainVideoZones > 1 {
+		splits := make([]string, 0, mainVideoZones)
+		for i := 0; i < mainVideoZones; i++ {
+			splits = append(splits, fmt.Sprintf("ms%d", i))
 		}
-		chain = append(chain, fmt.Sprintf("[0:v]split=%d[%s]", srcVideoCount, strings.Join(splits, "][")))
+		chain = append(chain, fmt.Sprintf("[0:v]split=%d[%s]", mainVideoZones, strings.Join(splits, "][")))
 	}
 
-	videoN := 0
+	mainN := 0
 	for i, z := range layout.Zones {
-		if z.Type != "video" {
+		idx := zoneInput[i]
+		if z.Type == "blank" || idx < 0 {
 			label := fmt.Sprintf("blank%d", i)
 			chain = append(chain, fmt.Sprintf("color=c=0x1A1A1E:s=%dx%d:d=%.3f:r=%d[%s]",
 				z.W, z.H, dur, fps, label))
@@ -149,7 +231,6 @@ func BuildArgs(in RenderInput) ([]string, error) {
 			continue
 		}
 		label := fmt.Sprintf("z%d", i)
-		// Folga para o zoom, garantindo sempre uma área >= à zona (evita crop inválido).
 		factor := 1.12 / zoom
 		if factor < 1.02 {
 			factor = 1.02
@@ -162,20 +243,42 @@ func BuildArgs(in RenderInput) ([]string, error) {
 		if outH%2 != 0 {
 			outH++
 		}
-		filter := fmt.Sprintf(
-			"fps=%d,scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d:(iw-%d)*%.4f:(ih-%d)*%.4f",
-			fps, outW, outH, z.W, z.H, z.W, offX, z.H, offY)
-		if in.Plan.Mirror && videoN%2 == 1 {
-			filter += ",hflip"
+		var filter string
+		switch z.Type {
+		case "image":
+			if z.Fit == "contain" {
+				filter = fmt.Sprintf(
+					"fps=%d,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black@0,format=rgba",
+					fps, z.W, z.H, z.W, z.H)
+			} else {
+				filter = fmt.Sprintf(
+					"fps=%d,scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d",
+					fps, outW, outH, z.W, z.H)
+			}
+		default:
+			filter = fmt.Sprintf(
+				"fps=%d,scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d:(iw-%d)*%.4f:(ih-%d)*%.4f",
+				fps, outW, outH, z.W, z.H, z.W, offX, z.H, offY)
+			if in.Plan.Mirror && mainN%2 == 1 {
+				filter += ",hflip"
+			}
+			filter += fmt.Sprintf(",eq=saturation=%.3f:brightness=%.3f", sat, bri-1)
 		}
-		filter += fmt.Sprintf(",eq=saturation=%.3f:brightness=%.3f", sat, bri-1)
-		input := videoSource
-		if srcVideoCount > 1 {
-			input = fmt.Sprintf("vs%d", videoN)
+
+		input := fmt.Sprintf("%d:v", idx)
+		if idx == 0 && mainVideoZones > 1 {
+			input = fmt.Sprintf("[ms%d]", mainN)
 		}
-		chain = append(chain, fmt.Sprintf("[%s]%s[%s]", input, filter, label))
+		if idx == 0 {
+			mainN++
+		}
+		if strings.HasPrefix(input, "[") {
+			chain = append(chain, fmt.Sprintf("%s%s[%s]", input, filter, label))
+		} else {
+			chain = append(chain, fmt.Sprintf("[%s]%s[%s]", input, filter, label))
+		}
+		_ = mainSplit
 		labels[i] = label
-		videoN++
 	}
 
 	prev := "base"
@@ -187,27 +290,6 @@ func BuildArgs(in RenderInput) ([]string, error) {
 		next := fmt.Sprintf("o%d", i)
 		chain = append(chain, fmt.Sprintf("[%s][%s]overlay=%d:%d:shortest=0[%s]", prev, labels[i], z.X, z.Y, next))
 		prev = next
-	}
-
-	useLogo := spec.Logo.Enabled && in.LogoPath != ""
-	if useLogo {
-		if _, err := os.Stat(in.LogoPath); err != nil {
-			useLogo = false
-		}
-	}
-	if useLogo {
-		opacity := spec.Logo.Opacity
-		if opacity <= 0 || opacity > 1 {
-			opacity = 1
-		}
-		pos := spec.Logo.Position
-		margin := spec.Logo.Margin
-		x, y := logoPosition(pos, margin)
-		chain = append(chain, fmt.Sprintf(
-			"[1:v]scale=%d:-2,format=rgba,colorchannelmixer=aa=%.2f[logo]",
-			spec.Logo.Size, opacity))
-		chain = append(chain, fmt.Sprintf("[%s][logo]overlay=%s:%s[logoo]", prev, x, y))
-		prev = "logoo"
 	}
 
 	// Faixa de fundo da headline: retângulo de largura total.
@@ -253,8 +335,15 @@ func BuildArgs(in RenderInput) ([]string, error) {
 			handleY = nameY + spec.Profile.NameSize + 2
 		}
 
-		// Avatar circular com a inicial do perfil.
-		if av > 0 {
+		// Avatar: imagem circular quando houver, senão a inicial.
+		if useAvatar && av > 0 {
+			half := av / 2
+			chain = append(chain, fmt.Sprintf(
+				"[%d:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lte(hypot(X-%d,Y-%d),%d),255,0)'[avatarimg]",
+				avatarIdx, av, av, av, av, half, half, half))
+			chain = append(chain, fmt.Sprintf("[%s][avatarimg]overlay=%d:%d[withavatar]", prev, avatarX, layout.ProfileY))
+			prev = "withavatar"
+		} else if av > 0 {
 			initial := strings.ToUpper(string([]rune(name)[0]))
 			initFile := stem + ".initial.txt"
 			if err := os.WriteFile(initFile, []byte(initial), 0o644); err != nil {
@@ -325,11 +414,21 @@ func BuildArgs(in RenderInput) ([]string, error) {
 	args := []string{
 		"-hide_banner", "-loglevel", "error", "-nostdin",
 		"-progress", "pipe:1",
-		"-ss", fmt.Sprintf("%.3f", float64(in.Clip.StartMS)/1000),
-		"-i", in.SourcePath,
 	}
-	if useLogo {
-		args = append(args, "-i", in.LogoPath)
+	for _, inp := range inputs {
+		switch inp.kind {
+		case "main":
+			args = append(args, "-ss", fmt.Sprintf("%.3f", float64(in.Clip.StartMS)/1000), "-i", inp.path)
+		case "image":
+			args = append(args, "-loop", "1", "-t", fmt.Sprintf("%.3f", dur), "-i", inp.path)
+		case "video":
+			args = append(args,
+				"-stream_loop", "-1",
+				"-ss", fmt.Sprintf("%.3f", float64(in.Clip.StartMS)/1000),
+				"-i", inp.path)
+		default:
+			args = append(args, "-i", inp.path)
+		}
 	}
 	args = append(args,
 		"-t", fmt.Sprintf("%.3f", dur),

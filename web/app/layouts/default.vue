@@ -80,6 +80,7 @@ const nav = [
   { to: '/templates', label: 'Templates', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>' },
   { to: '/renders', label: 'Renders', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>' },
   { to: '/publicacoes', label: 'Publicações', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11a8 8 0 0 1 8-8h8v8a8 8 0 0 1-16 0Z"/><path d="m4 20 8-8"/></svg>' },
+  { to: '/atividade', label: 'Atividade', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>' },
   { to: '/integracoes', label: 'Integrações', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 7V3m6 4V3M6 11h12v4a6 6 0 0 1-12 0v-4Z"/><path d="M12 21v-4"/></svg>' },
   { to: '/configuracoes', label: 'Configurações', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>' },
 ]

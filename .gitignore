@@ -25,3 +25,9 @@ problema/
 # sistema
 .DS_Store
 *.log
+
+# artefatos de teste do drawtext
+*.handle.txt
+*.headline.txt
+*.initial.txt
+*.name.txt

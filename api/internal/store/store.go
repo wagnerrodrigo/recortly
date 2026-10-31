@@ -66,7 +66,7 @@ func Migrate(ctx context.Context, url string) error {
 
 // MustStorage cria os diretórios de armazenamento.
 func MustStorage(dir string) error {
-	for _, sub := range []string{"sources", "renders", "tmp", "thumbnails", "proxies", "logos"} {
+	for _, sub := range []string{"sources", "renders", "tmp", "thumbnails", "proxies", "logos", "images"} {
 		if err := os.MkdirAll(dir+"/"+sub, 0o755); err != nil {
 			return err
 		}

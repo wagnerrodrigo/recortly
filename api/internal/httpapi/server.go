@@ -24,7 +24,7 @@ type Server struct {
 
 func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
-	r.Use(recoverer, requestLogger)
+	r.Use(recoverer, requestLogger, s.errorLogger)
 
 	r.Get("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -60,9 +60,14 @@ func (s *Server) Router() http.Handler {
 
 		r.Post("/api/uploads/logo", s.handleUploadLogo)
 		r.Get("/api/logos/{name}", s.handleLogoMedia)
+		r.Post("/api/uploads/image", s.handleUploadImage)
+		r.Get("/api/images/{name}", s.handleImageMedia)
 
 		r.Get("/api/ai/status", s.handleAIStatus)
 		r.Post("/api/ai/phrases", s.handleAIPhrases)
+
+		r.Get("/api/events", s.handleListEvents)
+		r.Post("/api/events/clear", s.handleClearEvents)
 
 		r.Get("/api/renders", s.handleListRenders)
 		r.Post("/api/renders", s.handleCreateRender)
@@ -112,6 +117,36 @@ func recoverer(next http.Handler) http.Handler {
 			}
 		}()
 		next.ServeHTTP(w, r)
+	})
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *statusWriter) Write(b []byte) (int, error) {
+	if w.status == 0 {
+		w.status = http.StatusOK
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+// errorLogger registra respostas 5xx na tela Atividade.
+func (s *Server) errorLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sw := &statusWriter{ResponseWriter: w}
+		next.ServeHTTP(sw, r)
+		if sw.status >= 500 {
+			s.Store.AddEvent(r.Context(), "error", "api",
+				"Erro interno em "+r.Method+" "+r.URL.Path,
+				map[string]any{"status": sw.status}, nil)
+		}
 	})
 }
 

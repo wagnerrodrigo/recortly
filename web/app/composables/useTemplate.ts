@@ -3,6 +3,8 @@ export interface TemplateZone {
   weight: number
   radius: number
   fit: string
+  sourceId?: number | null
+  imagePath?: string
 }
 
 export interface TemplateSpec {
@@ -126,6 +128,15 @@ export const zonePresets = [
     zones: [
       { type: 'video', weight: 0.55, radius: 14, fit: 'cover' },
       { type: 'video', weight: 0.45, radius: 14, fit: 'cover' },
+    ],
+  },
+  {
+    id: 'video-image',
+    label: 'Vídeo + imagem',
+    icon: '▮▣',
+    zones: [
+      { type: 'video', weight: 0.62, radius: 14, fit: 'cover' },
+      { type: 'image', weight: 0.38, radius: 14, fit: 'contain' },
     ],
   },
   {

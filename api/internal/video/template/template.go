@@ -68,6 +68,10 @@ type Zone struct {
 	Weight float64 `json:"weight"`
 	Radius int     `json:"radius"`
 	Fit    string  `json:"fit"` // cover | contain
+	// SourceID aponta para outro vídeo da biblioteca. Vazio = vídeo principal.
+	SourceID *int64 `json:"sourceId,omitempty"`
+	// ImagePath é o nome do arquivo em storage/images (zonas de imagem).
+	ImagePath string `json:"imagePath,omitempty"`
 }
 
 // Logo é um selo/watermark opcional sobre o canvas.
@@ -333,8 +337,11 @@ func Validate(s Spec) error {
 	if videos == 0 {
 		errs = append(errs, "o template precisa de pelo menos uma zona de vídeo")
 	}
-	if images > 0 {
-		errs = append(errs, "zonas de imagem ainda não são renderizadas nesta versão")
+	for _, z := range s.Zones {
+		if z.Type == "image" && strings.TrimSpace(z.ImagePath) == "" {
+			errs = append(errs, "toda zona de imagem precisa de uma imagem")
+			break
+		}
 	}
 	if s.Logo.Enabled && strings.TrimSpace(s.Logo.Path) == "" {
 		errs = append(errs, "envie a logo ou desative a opção")

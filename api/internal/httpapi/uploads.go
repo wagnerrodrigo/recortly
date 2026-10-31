@@ -64,6 +64,80 @@ func (s *Server) handleUploadLogo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleUploadImage recebe imagens usadas nas zonas de imagem.
+func (s *Server) handleUploadImage(w http.ResponseWriter, r *http.Request) {
+	s.handleImageUpload(w, r, "image", "images")
+}
+
+func (s *Server) handleImageUpload(w http.ResponseWriter, r *http.Request, field, subdir string) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxLogoBytes)
+	if err := r.ParseMultipartForm(8 << 20); err != nil {
+		writeErr(w, http.StatusBadRequest, "envio inválido: "+err.Error())
+		return
+	}
+	file, header, err := r.FormFile(field)
+	if err != nil {
+		file, header, err = r.FormFile("file")
+	}
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "campo '"+field+"' é obrigatório")
+		return
+	}
+	defer file.Close()
+
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	switch ext {
+	case ".png", ".jpg", ".jpeg", ".webp", ".gif":
+	default:
+		writeErr(w, http.StatusBadRequest, "use PNG, JPG, WEBP ou GIF")
+		return
+	}
+
+	dir := filepath.Join(s.StorageDir, subdir)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	name := uuid.NewString() + ext
+	out, err := os.Create(filepath.Join(dir, name))
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if _, err := io.Copy(out, file); err != nil {
+		_ = out.Close()
+		writeErr(w, http.StatusInternalServerError, "falha ao salvar")
+		return
+	}
+	_ = out.Close()
+
+	writeJSON(w, http.StatusCreated, map[string]string{
+		"path": name,
+		"url":  "/api/" + subdir + "/" + name,
+	})
+}
+
+// handleImageMedia serve imagens de zonas.
+func (s *Server) handleImageMedia(w http.ResponseWriter, r *http.Request) {
+	s.serveUpload(w, r, "images")
+}
+
+func (s *Server) serveUpload(w http.ResponseWriter, r *http.Request, subdir string) {
+	name := filepath.Base(chi.URLParam(r, "name"))
+	f, err := os.Open(filepath.Join(s.StorageDir, subdir, name))
+	if err != nil {
+		writeErr(w, http.StatusNotFound, "arquivo não encontrado")
+		return
+	}
+	defer f.Close()
+	stat, err := f.Stat()
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	http.ServeContent(w, r, stat.Name(), stat.ModTime(), f)
+}
+
 // handleLogoMedia serve a logo salva (usada no preview do wizard).
 func (s *Server) handleLogoMedia(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(chi.URLParam(r, "name"))

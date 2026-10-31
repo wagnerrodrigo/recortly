@@ -44,25 +44,48 @@
           </div>
           <p class="mt-3 text-center text-sm font-semibold">{{ preset.name }}</p>
           <p class="mt-1 flex-1 text-center text-[11px]" style="color: var(--color-muted)">{{ preset.description }}</p>
-          <button class="btn btn-primary mt-3 w-full text-xs" :disabled="creating === preset.id" @click="createFromPreset(preset)">
-            {{ creating === preset.id ? 'Criando...' : 'Usar este template →' }}
-          </button>
+          <span v-if="existingByPreset[preset.id]" class="mt-2 block text-center text-[11px]" style="color: var(--color-muted)">
+            Você já tem esse modelo
+          </span>
+          <button
+            v-if="existingByPreset[preset.id]"
+            class="btn btn-primary mt-3 w-full text-xs"
+            @click="openExisting(preset)"
+          >Abrir existente →</button>
+          <button
+            v-else
+            class="btn btn-primary mt-3 w-full text-xs"
+            :disabled="creating === preset.id"
+            @click="createFromPreset(preset)"
+          >{{ creating === preset.id ? 'Criando...' : 'Usar este template →' }}</button>
+          <button
+            v-if="existingByPreset[preset.id]"
+            class="mt-2 text-center text-[11px] underline"
+            style="color: var(--color-muted)"
+            :disabled="creating === preset.id"
+            @click="createFromPreset(preset)"
+          >Criar outro a partir deste</button>
         </article>
       </div>
     </section>
 
     <section>
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold uppercase tracking-wide" style="color: var(--color-muted)">Meus templates</h2>
-        <button class="btn btn-ghost h-9 text-xs" :disabled="creating === 'blank'" @click="createBlank">+ Em branco</button>
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-sm font-semibold uppercase tracking-wide" style="color: var(--color-muted)">
+          Meus templates <span class="ml-1 font-normal">({{ templates.length }})</span>
+        </h2>
+        <div class="flex items-center gap-2">
+          <input v-model="search" class="input h-9 w-48 text-xs" placeholder="Buscar template..." />
+          <button class="btn btn-ghost h-9 text-xs" :disabled="creating === 'blank'" @click="createBlank">+ Em branco</button>
+        </div>
       </div>
 
       <div v-if="loading" class="card p-8 text-center text-sm" style="color: var(--color-muted)">Carregando...</div>
-      <div v-else-if="!templates.length" class="card p-8 text-center text-sm" style="color: var(--color-muted)">
-        Nenhum template salvo ainda. Escolha um modelo acima.
+      <div v-else-if="!filteredTemplates.length" class="card p-8 text-center text-sm" style="color: var(--color-muted)">
+        {{ search ? 'Nenhum template com esse nome.' : 'Nenhum template salvo ainda. Escolha um modelo acima.' }}
       </div>
       <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article v-for="t in templates" :key="t.id" class="card flex flex-col p-4">
+        <article v-for="t in filteredTemplates" :key="t.id" class="card flex flex-col p-4">
           <div class="mx-auto w-full max-w-[180px]">
             <TemplatePreview :spec="t.spec" :layout="layouts['t' + t.id]" :headline="t.spec.phrases?.[0]" />
           </div>
@@ -84,11 +107,28 @@
 
 <script setup lang="ts">
 const route = useRoute()
+const filteredTemplates = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return templates.value
+  return templates.value.filter((t: any) => (t.name || '').toLowerCase().includes(q))
+})
+
+// Um modelo já criado por preset evita duplicar ao clicar de novo.
+const existingByPreset = computed<Record<string, any>>(() => {
+  const map: Record<string, any> = {}
+  for (const t of templates.value) {
+    const preset = t.spec?.preset
+    if (preset && !map[preset]) map[preset] = t
+  }
+  return map
+})
+
 const clipQuery = computed(() => (typeof route.query.clip === 'string' ? route.query.clip : ''))
 const presets = ref<any[]>([])
 const templates = ref<any[]>([])
 const layouts = reactive<Record<string, any>>({})
 const loading = ref(true)
+const search = ref('')
 const creating = ref('')
 const error = ref('')
 
@@ -157,6 +197,13 @@ async function createBlank() {
   } finally {
     creating.value = ''
   }
+}
+
+function openExisting(preset: any) {
+  const existing = existingByPreset.value[preset.id]
+  if (!existing) return createFromPreset(preset)
+  const suffix = clipQuery.value ? `?clip=${clipQuery.value}` : ''
+  navigateTo(`/templates/${existing.id}${suffix}`)
 }
 
 async function remove(t: any) {

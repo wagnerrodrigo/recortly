@@ -145,7 +145,9 @@ Implementado:
       lock de worker único, recuperação no boot e botão "Tentar de novo".
 - [x] Exclusão de renders (individual e em lote) preservando o histórico de publicações.
 - [ ] Instagram e TikTok: adaptadores prontos, faltam app aprovado e credenciais.
-- [ ] Zonas de imagem.
+- [x] Zonas de imagem e segundo vídeo da biblioteca.
+- [x] Avatar/logo no perfil do card, controles de preview e reset por etapa.
+- [x] Tela Atividade com logs e erros de render, publicação e API, com destravamento de renders.
 - [ ] Legenda automática por transcrição.
 
 ## 9. Próximos passos

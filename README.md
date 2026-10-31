@@ -33,16 +33,21 @@ O caminho principal é o **template**, com 7 passos:
 
 1. **Biblioteca**: suba o vídeo e preencha **origem e licença** (autor, link, tipo de licença).
 2. **Templates**: escolha um modelo (Twitter/X, Meme, Vídeo viral ou em branco) e siga os passos.
-   - **Zonas**: empilhe vídeo e espaço vazio, com peso e cantos arredondados.
+   - **Zonas**: empilhe **vídeo** (principal ou outro da biblioteca), **imagem** (upload)
+     e espaço vazio, com peso e cantos arredondados.
    - **Frases**: escreva ou gere com IA local.
    - **Mídia**: escolha o vídeo e marque o corte ali mesmo.
-   - **Estilo**: fonte, cor, contorno, faixa e **logo** (posição, tamanho e opacidade).
+   - **Estilo**: fonte, cor, contorno e faixa. Cada etapa tem "Restaurar padrão".
    - **Variações**: quantidade, faixas de zoom/cor/recorte e espelhamento; cada geração usa uma seed nova.
+   - **Perfil**: inclui o **avatar/logo** — a imagem redonda do perfil. Sem imagem, aparecem as iniciais do nome.
    - **Gerar**: dispara o render e mostra o progresso e os arquivos na própria tela.
 3. **Editor** (opcional): corte rápido para quem prefere a timeline simplificada.
 4. **Renders**: veja todos os renders, baixe ou vá para publicar.
 5. **Publicações**: publique agora, agende ou salve como rascunho.
 6. **Integrações**: conecte o YouTube (OAuth) para publicar de verdade.
+7. **Atividade**: logs e erros de render, publicação, vídeo e API. É onde você confere
+   por que algo travou, com filtros por nível, atualização automática e botão para
+   **destravar** renders presos.
 
 ## Estrutura
 
@@ -114,9 +119,8 @@ automaticamente na descrição. Publique apenas conteúdo próprio ou com permis
 - **Instagram** e **TikTok** ainda não publicam: os adaptadores existem e retornam uma
   mensagem clara. É necessário app aprovado nas plataformas.
 - **YouTube** publica via Data API quando as credenciais OAuth estão configuradas.
-- Zonas de **imagem** ainda não são renderizadas (o editor já reserva o tipo, mas a
-  validação bloqueia até a implementação).
-- O preview dos templates é aproximado; o resultado final vem do FFmpeg.
+- O preview dos templates é aproximado; o resultado final vem do FFmpeg. Ele tem
+play/pause e barra de tempo para conferir o corte antes de renderizar.
 - Não há download de conteúdo de terceiros (por decisão de escopo e de direitos).
 
 ## Testes manuais do fluxo
@@ -132,6 +136,19 @@ curl -b cookies.txt -X POST localhost:8080/api/renders \
 ```
 
 O plano completo, com fases e decisões de produto, está em [`PLANO.md`](./PLANO.md).
+
+## Atividade (logs e erros)
+
+A tela **Atividade** mostra eventos gravados pelo worker e pela API:
+
+- falhas de render (FFmpeg, proxy, template, arquivo);
+- falhas e bloqueios de publicação;
+- erros internos da API (5xx);
+- renders concluídos (informativo).
+
+Tem filtro por nível (erro/aviso/info), atualização automática a cada 5s, detalhes em JSON
+e limpeza por idade. Se houver render em `running` por mais de 10 minutos, aparece um aviso
+com o botão **Destravar**.
 
 ## Apagar renders
 

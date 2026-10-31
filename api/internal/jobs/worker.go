@@ -67,6 +67,14 @@ func (w *Worker) Recover(ctx context.Context, queue *Enqueuer) {
 	}
 }
 
+// logEvent grava um evento visível na tela Atividade.
+func (w *Worker) logEvent(ctx context.Context, level, source, message string, details map[string]any) {
+	if w.Store == nil {
+		return
+	}
+	w.Store.AddEvent(context.WithoutCancel(ctx), level, source, message, details, nil)
+}
+
 func (w *Worker) Mux() *asynq.ServeMux {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TypeRender, recoverTask("render", w.handleRender))
@@ -96,6 +104,7 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 	r, err := w.Store.RenderForWorker(ctx, p.RenderID)
 	if err != nil {
 		slog.Error("render não encontrado", "render", p.RenderID, "err", err)
+		w.logEvent(ctx, "warn", "render", "Render não encontrado na fila", map[string]any{"renderId": p.RenderID})
 		return asynq.SkipRetry
 	}
 	slog.Info("processando render", "render", r.ID, "clip", r.ClipID, "status", r.Status)
@@ -107,12 +116,14 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 	if err != nil {
 		slog.Error("clip", "render", r.ID, "clip", r.ClipID, "err", err)
 		_ = w.Store.SetRenderError(ctx, r.ID, "clip não encontrado")
+		w.logEvent(ctx, "error", "render", "Corte do render não encontrado", map[string]any{"renderId": r.ID, "clipId": r.ClipID})
 		return asynq.SkipRetry
 	}
 	source, err := w.Store.SourceForClip(ctx, clip.ID)
 	if err != nil {
 		slog.Error("source", "render", r.ID, "clip", clip.ID, "err", err)
 		_ = w.Store.SetRenderError(ctx, r.ID, "vídeo de origem não encontrado")
+		w.logEvent(ctx, "error", "render", "Vídeo de origem não encontrado", map[string]any{"renderId": r.ID})
 		return asynq.SkipRetry
 	}
 	slog.Info("fonte pronta", "render", r.ID, "path", source.FilePath, "audio", source.HasAudio)
@@ -129,6 +140,7 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 	spec.Normalize()
 	if err := template.Validate(spec); err != nil {
 		_ = w.Store.SetRenderError(ctx, r.ID, err.Error())
+		w.logEvent(ctx, "error", "render", "Template inválido: "+err.Error(), map[string]any{"renderId": r.ID})
 		return asynq.SkipRetry
 	}
 
@@ -153,6 +165,7 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 			if err != nil {
 				slog.Error("proxy", "source", source.ID, "err", err)
 				_ = w.Store.SetRenderError(context.WithoutCancel(ctx), r.ID, "preparação do vídeo falhou: "+err.Error())
+				w.logEvent(ctx, "error", "video", "Falha ao preparar o vídeo (proxy)", map[string]any{"renderId": r.ID, "sourceId": source.ID, "erro": err.Error()})
 				return asynq.SkipRetry
 			}
 			sourcePath = proxyPath
@@ -185,19 +198,41 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 		}
 
 		outPath := filepath.Join(outDir, fmt.Sprintf("variant-%02d.mp4", i+1))
-		logoPath := ""
-		if spec.Logo.Enabled && spec.Logo.Path != "" {
-			logoPath = filepath.Join(w.StorageDir, "logos", filepath.Base(spec.Logo.Path))
+		extraSources := map[int64]string{}
+		for _, z := range spec.Zones {
+			if z.Type != "video" || z.SourceID == nil {
+				continue
+			}
+			id := *z.SourceID
+			if id == 0 || id == source.ID {
+				continue
+			}
+			if _, ok := extraSources[id]; ok {
+				continue
+			}
+			extra, err := w.Store.GetSource(ctx, source.UserID, id)
+			if err != nil {
+				slog.Warn("vídeo extra não encontrado", "source", id)
+				continue
+			}
+			extraSources[id] = extra.FilePath
+		}
+
+		avatarPath := ""
+		if spec.Profile.Avatar != "" {
+			avatarPath = filepath.Join(w.StorageDir, "logos", filepath.Base(spec.Profile.Avatar))
 		}
 		in := video.RenderInput{
-			SourcePath: sourcePath,
-			LogoPath:   logoPath,
-			OutPath:    outPath,
-			Clip:       renderClip,
-			Spec:       spec,
-			Plan:       plan,
-			HasAudio:   source.HasAudio,
-			FontPath:   w.FontPath,
+			SourcePath:   sourcePath,
+			AvatarPath:   avatarPath,
+			ExtraSources: extraSources,
+			ImagesDir:    filepath.Join(w.StorageDir, "images"),
+			OutPath:      outPath,
+			Clip:         renderClip,
+			Spec:         spec,
+			Plan:         plan,
+			HasAudio:     source.HasAudio,
+			FontPath:     w.FontPath,
 		}
 		base := 10 + i*90/len(plans)
 		var lastWrite time.Time
@@ -211,6 +246,7 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 		})
 		if err != nil {
 			slog.Error("ffmpeg falhou", "render", r.ID, "variante", i, "err", err)
+			w.logEvent(ctx, "error", "render", fmt.Sprintf("FFmpeg falhou na variação %d", i+1), map[string]any{"renderId": r.ID, "variante": i + 1, "erro": err.Error()})
 			if errors.Is(err, context.Canceled) {
 				_ = w.Store.SetRenderStatus(context.WithoutCancel(ctx), r.ID, "cancelled", 0)
 				return nil
@@ -226,12 +262,14 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 			DurationMS: clip.DurationMS(),
 		}); err != nil {
 			slog.Error("salvar output", "render", r.ID, "variante", i, "err", err)
+			w.logEvent(ctx, "error", "render", "Falha ao salvar arquivo do render", map[string]any{"renderId": r.ID, "erro": err.Error()})
 			return err
 		}
 	}
 
 	_ = w.Store.SetRenderStatus(ctx, r.ID, "done", 100)
 	slog.Info("render concluído", "render", r.ID, "variacoes", len(plans))
+	w.logEvent(ctx, "info", "render", "Render concluído", map[string]any{"renderId": r.ID, "variacoes": len(plans)})
 	return nil
 }
 
@@ -251,6 +289,7 @@ func (w *Worker) handlePublish(ctx context.Context, t *asynq.Task) error {
 	}
 	if !source.CanPublish() {
 		slog.Warn("publicação bloqueada por licença", "post", post.ID)
+		w.logEvent(ctx, "warn", "publish", "Publicação bloqueada: origem/licença não preenchida", map[string]any{"postId": post.ID})
 		_ = w.Store.SetPostStatus(context.WithoutCancel(ctx), post.ID, "failed", "origem e licença não preenchidas", "", "")
 		return asynq.SkipRetry
 	}
@@ -281,12 +320,14 @@ func (w *Worker) handlePublish(ctx context.Context, t *asynq.Task) error {
 	})
 	if err != nil {
 		slog.Error("falha ao publicar", "post", post.ID, "err", err)
+		w.logEvent(ctx, "error", "publish", "Falha ao publicar em "+post.Platform, map[string]any{"postId": post.ID, "erro": err.Error()})
 		if setErr := w.Store.SetPostStatus(context.WithoutCancel(ctx), post.ID, "failed", err.Error(), "", ""); setErr != nil {
 			slog.Error("salvar status do post", "post", post.ID, "err", setErr)
 		}
 		return nil
 	}
 	slog.Info("publicado", "post", post.ID, "url", res.ExternalURL)
+	w.logEvent(ctx, "info", "publish", "Publicado em "+post.Platform, map[string]any{"postId": post.ID, "url": res.ExternalURL})
 	_ = w.Store.SetPostStatus(context.WithoutCancel(ctx), post.ID, "published", "", res.ExternalID, res.ExternalURL)
 	return nil
 }
