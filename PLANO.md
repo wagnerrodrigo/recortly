@@ -148,6 +148,7 @@ Implementado:
 - [x] Zonas de imagem e segundo vídeo da biblioteca.
 - [x] Avatar/logo no perfil do card, controles de preview e reset por etapa.
 - [x] Tela Atividade com logs e erros de render, publicação e API, com destravamento de renders.
+- [x] Nomes de download pela headline da variação e exportação em ZIP.
 - [ ] Legenda automática por transcrição.
 
 ## 9. Próximos passos

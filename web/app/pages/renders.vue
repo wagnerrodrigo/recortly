@@ -104,10 +104,10 @@
           >{{ deleting === r.id ? '...' : 'Apagar' }}</button>
           <a
             v-if="r.outputs?.length"
-            :href="`/api/outputs/${r.outputs[0].id}/media`"
-            :download="`render-${r.id}.mp4`"
+            :href="`/api/renders/${r.id}/zip`"
+            :download="`render-${r.id}.zip`"
             class="btn btn-ghost h-8 px-3 text-xs"
-          >Baixar tudo</a>
+          >Baixar tudo (.zip)</a>
           <div class="w-32">
             <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100">
               <div class="h-full rounded-full transition-all" :style="{ width: r.progress + '%', background: 'var(--color-brand-500)' }" />
@@ -117,13 +117,17 @@
         </header>
         <p v-if="r.error" class="bg-red-50 px-5 py-2 text-sm text-red-700">{{ r.error }}</p>
         <div v-if="r.outputs?.length" class="flex gap-4 overflow-x-auto p-5 scrollbar-thin">
-          <div v-for="o in r.outputs" :key="o.id" class="w-[200px] shrink-0">
+          <div v-for="(o, oi) in r.outputs" :key="o.id" class="w-[200px] shrink-0">
             <div class="overflow-hidden rounded-lg bg-black" style="aspect-ratio: 9/16">
               <video :src="o.mediaUrl" class="h-full w-full object-contain" controls preload="metadata" playsinline />
             </div>
             <p class="mt-2 line-clamp-2 text-xs" style="color: var(--color-muted)">{{ o.headline || 'Sem headline' }}</p>
             <div class="mt-2 flex gap-2">
-              <a :href="o.mediaUrl" download class="btn btn-ghost h-8 flex-1 text-xs">Baixar</a>
+              <a
+                :href="o.mediaUrl"
+                :download="videoFileName(o.headline, oi + 1, r.outputs.length)"
+                class="btn btn-ghost h-8 flex-1 text-xs"
+              >Baixar</a>
               <NuxtLink :to="`/publicacoes?output=${o.id}`" class="btn btn-primary h-8 flex-1 text-xs">Publicar</NuxtLink>
             </div>
           </div>

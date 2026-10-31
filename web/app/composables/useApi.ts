@@ -57,3 +57,19 @@ export function statusChip(status: string): string {
       return 'chip chip-neutral'
   }
 }
+
+// Nome do arquivo baixado, igual ao usado no ZIP do backend.
+export function videoFileName(headline: string | undefined, index: number, total: number): string {
+  const valid = (headline || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^[ .-]+|[ .-]+$/g, '')
+    .slice(0, 70)
+    .trim()
+  const base = valid || 'video'
+  return total > 1 ? `${String(index).padStart(2, '0')} - ${base}.mp4` : `${base}.mp4`
+}

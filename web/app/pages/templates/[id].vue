@@ -515,14 +515,23 @@
             </div>
             <p v-if="render.error" class="mt-2 text-xs text-red-600">{{ render.error }}</p>
 
+            <div v-if="render.outputs?.length" class="mt-3">
+              <a :href="`/api/renders/${render.id}/zip`" :download="`render-${render.id}.zip`" class="btn btn-ghost h-8 text-xs">
+                Baixar tudo (.zip)
+              </a>
+            </div>
             <div v-if="render.outputs?.length" class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              <div v-for="o in render.outputs" :key="o.id">
+              <div v-for="(o, oi) in render.outputs" :key="o.id">
                 <div class="overflow-hidden rounded-lg bg-black" style="aspect-ratio: 9/16">
                   <video :src="o.mediaUrl" class="h-full w-full object-contain" controls preload="metadata" playsinline />
                 </div>
                 <p class="mt-1 line-clamp-2 text-[11px]" style="color: var(--color-muted)">{{ o.headline }}</p>
                 <div class="mt-1 flex gap-1">
-                  <a :href="o.mediaUrl" download class="btn btn-ghost h-7 flex-1 px-1 text-[11px]">Baixar</a>
+                  <a
+                    :href="o.mediaUrl"
+                    :download="videoFileName(o.headline, oi + 1, render.outputs.length)"
+                    class="btn btn-ghost h-7 flex-1 px-1 text-[11px]"
+                  >Baixar</a>
                   <NuxtLink :to="`/publicacoes?output=${o.id}`" class="btn btn-primary h-7 flex-1 px-1 text-[11px]">Publicar</NuxtLink>
                 </div>
               </div>

@@ -72,6 +72,7 @@ func (s *Server) Router() http.Handler {
 		r.Get("/api/renders", s.handleListRenders)
 		r.Post("/api/renders", s.handleCreateRender)
 		r.Get("/api/renders/{id}", s.handleGetRender)
+		r.Get("/api/renders/{id}/zip", s.handleRenderZip)
 		r.Delete("/api/renders/{id}", s.handleDeleteRender)
 		r.Post("/api/renders/{id}/retry", s.handleRetryRender)
 		r.Post("/api/renders/purge", s.handlePurgeRenders)

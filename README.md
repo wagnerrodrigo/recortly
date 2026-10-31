@@ -137,6 +137,16 @@ curl -b cookies.txt -X POST localhost:8080/api/renders \
 
 O plano completo, com fases e decisões de produto, está em [`PLANO.md`](./PLANO.md).
 
+## Nomes dos downloads
+
+Cada arquivo baixado recebe o nome da **frase** usada naquela variação:
+
+- `Olha so o que rolou nesse servidor.mp4` quando há uma variação;
+- `01 - Primeira frase.mp4`, `02 - Segunda frase.mp4` quando há várias;
+- **Baixar tudo (.zip)** baixa todas as variações de um render em um ZIP com os mesmos nomes.
+
+Acentos são removidos e caracteres inválidos para nome de arquivo são substituídos.
+
 ## Atividade (logs e erros)
 
 A tela **Atividade** mostra eventos gravados pelo worker e pela API:
