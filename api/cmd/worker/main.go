@@ -39,6 +39,19 @@ func main() {
 		FontPath:   findFont(),
 		RedisAddr:  cfg.RedisAddr,
 	}
+	// Garante que só exista um worker por vez. Dois workers em paralelo
+	// causavam renders duplicados e travados.
+	lock, err := acquireLock(cfg.StorageDir)
+	if err != nil {
+		slog.Error("já existe um worker rodando", "err", err)
+		os.Exit(1)
+	}
+	defer lock.Release()
+
+	queue := jobs.NewEnqueuer(cfg.RedisAddr)
+	defer queue.Close()
+	w.Recover(context.Background(), queue)
+
 	srv := w.Server(max(1, cfg.RenderConcurrency))
 
 	scheduler := asynq.NewScheduler(asynq.RedisClientOpt{Addr: cfg.RedisAddr}, nil)

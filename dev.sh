@@ -22,6 +22,28 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
   exit 1
 fi
 
+stop_all() {
+  local pids
+  pids=$(lsof -ti tcp:8080 2>/dev/null || true)
+  if [ -n "$pids" ]; then kill -9 $pids 2>/dev/null || true; fi
+  if [ -f "$ROOT/storage/.worker.pid" ]; then
+    kill -9 "$(cat "$ROOT/storage/.worker.pid" 2>/dev/null)" 2>/dev/null || true
+    rm -f "$ROOT/storage/.worker.pid"
+  fi
+  sleep 1
+}
+
+if [ "${1:-}" = "stop" ]; then
+  echo "→ Encerrando API, worker e frontend..."
+  stop_all
+  docker compose stop >/dev/null 2>&1 || true
+  echo "Parado."
+  exit 0
+fi
+
+echo "→ Encerrando processos antigos..."
+stop_all
+
 echo "→ Subindo Postgres e Redis..."
 docker compose up -d
 

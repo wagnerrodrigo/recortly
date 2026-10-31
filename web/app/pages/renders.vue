@@ -5,7 +5,10 @@
         <h1 class="text-2xl font-bold tracking-tight">Renders</h1>
         <p class="mt-1 text-sm" style="color: var(--color-muted)">Cada corte vira uma ou mais variações verticais prontas para postar.</p>
       </div>
-      <button class="btn btn-ghost" :disabled="refreshing" @click="load">{{ refreshing ? 'Atualizando...' : 'Atualizar' }}</button>
+      <div class="flex gap-2">
+        <button class="btn btn-ghost" :disabled="refreshing" @click="load">{{ refreshing ? 'Atualizando...' : 'Atualizar' }}</button>
+        <button class="btn btn-ghost" @click="cleanupOpen = true">Apagar antigos</button>
+      </div>
     </div>
 
     <section v-if="clips.length" class="card p-5">
@@ -44,6 +47,35 @@
 
     <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
+    <div v-if="cleanupOpen" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4" @click.self="cleanupOpen = false">
+      <form class="card w-full max-w-md p-6" @submit.prevent="purge">
+        <h2 class="text-lg font-semibold">Apagar renders antigos</h2>
+        <p class="mt-1 text-xs" style="color: var(--color-muted)">
+          Os arquivos são removidos do disco. Publicações já feitas continuam no histórico.
+        </p>
+        <div class="mt-4 space-y-3">
+          <label class="flex items-center gap-2 text-sm">
+            <input v-model="cleanup.failed" type="checkbox" class="h-4 w-4 accent-pink-500" />
+            Renders com falha ou cancelados
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input v-model="cleanup.finished" type="checkbox" class="h-4 w-4 accent-pink-500" />
+            Renders concluídos com mais de
+            <input v-model.number="cleanup.days" type="number" min="1" max="365" class="input h-9 w-20" />
+            dias
+          </label>
+        </div>
+        <p v-if="cleanupError" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ cleanupError }}</p>
+        <p v-if="cleanupMessage" class="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{{ cleanupMessage }}</p>
+        <div class="mt-5 flex justify-end gap-2">
+          <button type="button" class="btn btn-ghost" @click="cleanupOpen = false">Fechar</button>
+          <button type="submit" class="btn btn-primary" :disabled="purging || (!cleanup.failed && !cleanup.finished)">
+            {{ purging ? 'Apagando...' : 'Apagar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
     <section v-if="loading" class="card p-8 text-center text-sm" style="color: var(--color-muted)">Carregando renders...</section>
     <section v-else-if="!renders.length" class="card p-10 text-center text-sm" style="color: var(--color-muted)">
       Nada renderizado ainda.
@@ -58,6 +90,18 @@
             </p>
           </div>
           <span :class="statusChip(r.status)">{{ r.status }}</span>
+          <button
+            v-if="r.status === 'failed' || r.status === 'cancelled'"
+            class="btn btn-ghost h-8 px-3 text-xs"
+            :disabled="retrying === r.id"
+            @click="retry(r)"
+          >{{ retrying === r.id ? 'Enviando...' : 'Tentar de novo' }}</button>
+          <button
+            class="btn btn-danger h-8 px-3 text-xs"
+            :disabled="r.status === 'queued' || r.status === 'running' || deleting === r.id"
+            :title="r.status === 'queued' || r.status === 'running' ? 'Aguarde o render terminar' : 'Apagar render'"
+            @click="removeRender(r)"
+          >{{ deleting === r.id ? '...' : 'Apagar' }}</button>
           <a
             v-if="r.outputs?.length"
             :href="`/api/outputs/${r.outputs[0].id}/media`"
@@ -101,6 +145,13 @@ const error = ref('')
 const message = ref('')
 
 const form = reactive({ clipId: 0, templateId: 0, variantCount: 3 })
+const retrying = ref(0)
+const deleting = ref(0)
+const cleanupOpen = ref(false)
+const purging = ref(false)
+const cleanupError = ref('')
+const cleanupMessage = ref('')
+const cleanup = reactive({ failed: true, finished: false, days: 30 })
 let timer: ReturnType<typeof setInterval> | null = null
 
 async function load() {
@@ -153,6 +204,60 @@ async function create() {
     error.value = errorMessage(e)
   } finally {
     creating.value = false
+  }
+}
+
+async function removeRender(r: any) {
+  const aviso = r.status === 'done'
+    ? 'Apagar este render e os arquivos? Publicações já feitas continuam no histórico.'
+    : 'Apagar este render e os arquivos?'
+  if (!confirm(aviso)) return
+  deleting.value = r.id
+  error.value = ''
+  try {
+    await apiSend(`/api/renders/${r.id}`, 'DELETE')
+    await load()
+  } catch (e) {
+    error.value = errorMessage(e)
+  } finally {
+    deleting.value = 0
+  }
+}
+
+async function purge() {
+  purging.value = true
+  cleanupError.value = ''
+  cleanupMessage.value = ''
+  try {
+    const statuses: string[] = []
+    if (cleanup.failed) statuses.push('failed', 'cancelled')
+    if (cleanup.finished) statuses.push('done')
+    const res = await apiSend<{ deleted: number }>('/api/renders/purge', 'POST', {
+      statuses,
+      olderThanDays: cleanup.finished ? cleanup.days : 0,
+    })
+    cleanupMessage.value = res.deleted === 0
+      ? 'Nenhum render para apagar com esses filtros.'
+      : `${res.deleted} render(s) apagado(s).`
+    await load()
+  } catch (e) {
+    cleanupError.value = errorMessage(e)
+  } finally {
+    purging.value = false
+  }
+}
+
+async function retry(r: any) {
+  retrying.value = r.id
+  error.value = ''
+  try {
+    await apiSend(`/api/renders/${r.id}/retry`, 'POST')
+    await load()
+    startPolling()
+  } catch (e) {
+    error.value = errorMessage(e)
+  } finally {
+    retrying.value = 0
   }
 }
 

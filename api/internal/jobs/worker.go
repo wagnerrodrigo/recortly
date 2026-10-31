@@ -41,6 +41,32 @@ func (w *Worker) Server(concurrency int) *asynq.Server {
 	)
 }
 
+// Recover encerra renders que ficaram presos em "running" e reenfileira os
+// que estavam na fila. Deve rodar uma única vez, no boot do worker.
+func (w *Worker) Recover(ctx context.Context, queue *Enqueuer) {
+	n, err := w.Store.MarkStaleRendersFailed(ctx,
+		"render interrompido (worker reiniciado). Gere novamente.")
+	if err != nil {
+		slog.Error("recuperar renders", "err", err)
+	} else if n > 0 {
+		slog.Warn("renders interrompidos marcados como falha", "total", n)
+	}
+
+	ids, err := w.Store.QueuedRenders(ctx)
+	if err != nil {
+		slog.Error("renders na fila", "err", err)
+		return
+	}
+	for _, id := range ids {
+		if err := queue.EnqueueRender(id); err != nil {
+			slog.Warn("reenfileirar render", "render", id, "err", err)
+		}
+	}
+	if len(ids) > 0 {
+		slog.Info("renders reenfileirados", "total", len(ids))
+	}
+}
+
 func (w *Worker) Mux() *asynq.ServeMux {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TypeRender, recoverTask("render", w.handleRender))
@@ -110,7 +136,36 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 	if err := w.Store.DeleteRenderOutputs(ctx, r.ID); err != nil {
 		return err
 	}
-	plans := video.Plan(spec)
+
+	// Fonte VP9/AV1/4K: converte só o trecho do corte para H.264 1080p.
+	// Fica em cache por source+corte, então as variações reaproveitam.
+	sourcePath := source.FilePath
+	renderClip := clip
+	if info, err := video.Probe(ctx, source.FilePath); err == nil {
+		if video.NeedsProxy(info) {
+			key := fmt.Sprintf("%d-%d-%d", source.ID, clip.StartMS, clip.EndMS)
+			proxyPath := filepath.Join(w.StorageDir, "proxies", key+".mp4")
+			proxyCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+			err := video.Proxy(proxyCtx, source.FilePath, proxyPath, clip.StartMS, clip.EndMS, info.HasAudio, func(pct int) {
+				_ = w.Store.SetRenderStatus(context.WithoutCancel(ctx), r.ID, "running", pct/10)
+			})
+			cancel()
+			if err != nil {
+				slog.Error("proxy", "source", source.ID, "err", err)
+				_ = w.Store.SetRenderError(context.WithoutCancel(ctx), r.ID, "preparação do vídeo falhou: "+err.Error())
+				return asynq.SkipRetry
+			}
+			sourcePath = proxyPath
+			source.HasAudio = true
+			renderClip = model.Clip{
+				ID: clip.ID, SourceID: clip.SourceID, Layout: clip.Layout,
+				Zoom: clip.Zoom, OffsetX: clip.OffsetX, OffsetY: clip.OffsetY,
+				StartMS: 0, EndMS: clip.EndMS - clip.StartMS,
+			}
+		}
+	}
+
+	plans := video.Plan(spec, r.Seed)
 	if len(plans) > r.VariantCount && r.VariantCount > 0 {
 		plans = plans[:r.VariantCount]
 	}
@@ -130,19 +185,24 @@ func (w *Worker) handleRender(ctx context.Context, t *asynq.Task) error {
 		}
 
 		outPath := filepath.Join(outDir, fmt.Sprintf("variant-%02d.mp4", i+1))
+		logoPath := ""
+		if spec.Logo.Enabled && spec.Logo.Path != "" {
+			logoPath = filepath.Join(w.StorageDir, "logos", filepath.Base(spec.Logo.Path))
+		}
 		in := video.RenderInput{
-			SourcePath: source.FilePath,
+			SourcePath: sourcePath,
+			LogoPath:   logoPath,
 			OutPath:    outPath,
-			Clip:       clip,
+			Clip:       renderClip,
 			Spec:       spec,
 			Plan:       plan,
 			HasAudio:   source.HasAudio,
 			FontPath:   w.FontPath,
 		}
-		base := i * 100 / len(plans)
+		base := 10 + i*90/len(plans)
 		var lastWrite time.Time
 		err := video.Render(ctx, in, func(pct int) {
-			overall := base + pct/len(plans)
+			overall := base + pct*90/100/len(plans)
 			if time.Since(lastWrite) < 1500*time.Millisecond && overall < 100 {
 				return
 			}

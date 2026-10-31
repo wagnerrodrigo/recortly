@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	QueueRenders  = "renders"
-	QueuePublish  = "publish"
+	QueueRenders     = "renders"
+	QueuePublish     = "publish"
 	QueueMaintenance = "maintenance"
 
-	TypeRender   = "render:run"
-	TypePublish  = "publish:run"
-	TypeCleanup  = "maintenance:cleanup"
+	TypeRender  = "render:run"
+	TypePublish = "publish:run"
+	TypeCleanup = "maintenance:cleanup"
 )
 
 type RenderPayload struct {
@@ -40,8 +40,7 @@ func (e *Enqueuer) EnqueueRender(renderID int64) error {
 	_, err := e.Client.Enqueue(asynq.NewTask(TypeRender, raw),
 		asynq.Queue(QueueRenders),
 		asynq.MaxRetry(1),
-		asynq.Timeout(2*time.Hour),
-		asynq.Unique(24*time.Hour))
+		asynq.Timeout(3*time.Hour))
 	return err
 }
 

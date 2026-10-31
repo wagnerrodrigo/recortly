@@ -15,25 +15,25 @@ type User struct {
 }
 
 type Source struct {
-	ID              int64      `json:"id"`
-	UserID          int64      `json:"userId"`
-	Title           string     `json:"title"`
-	FilePath        string     `json:"-"`
-	OriginalName    string     `json:"originalName"`
-	SizeBytes       int64      `json:"sizeBytes"`
-	DurationMS      int64      `json:"durationMs"`
-	Width           int        `json:"width"`
-	Height          int        `json:"height"`
-	HasAudio        bool       `json:"hasAudio"`
-	AuthorName      string     `json:"authorName"`
-	AuthorHandle    string     `json:"authorHandle"`
-	OriginalURL     string     `json:"originalUrl"`
-	LicenseType     *string    `json:"licenseType"`
-	PermissionProof string     `json:"permissionProof"`
-	Notes           string     `json:"notes"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	MediaURL        string     `json:"mediaUrl,omitempty"`
-	Clips           []Clip     `json:"clips,omitempty"`
+	ID              int64     `json:"id"`
+	UserID          int64     `json:"userId"`
+	Title           string    `json:"title"`
+	FilePath        string    `json:"-"`
+	OriginalName    string    `json:"originalName"`
+	SizeBytes       int64     `json:"sizeBytes"`
+	DurationMS      int64     `json:"durationMs"`
+	Width           int       `json:"width"`
+	Height          int       `json:"height"`
+	HasAudio        bool      `json:"hasAudio"`
+	AuthorName      string    `json:"authorName"`
+	AuthorHandle    string    `json:"authorHandle"`
+	OriginalURL     string    `json:"originalUrl"`
+	LicenseType     *string   `json:"licenseType"`
+	PermissionProof string    `json:"permissionProof"`
+	Notes           string    `json:"notes"`
+	CreatedAt       time.Time `json:"createdAt"`
+	MediaURL        string    `json:"mediaUrl,omitempty"`
+	Clips           []Clip    `json:"clips,omitempty"`
 }
 
 func (s Source) CanPublish() bool {
@@ -48,27 +48,27 @@ func (s Source) CanPublish() bool {
 }
 
 type Clip struct {
-	ID        int64   `json:"id"`
-	SourceID  int64   `json:"sourceId"`
-	Name      string  `json:"name"`
-	StartMS   int64   `json:"startMs"`
-	EndMS     int64   `json:"endMs"`
-	Layout    string  `json:"layout"`
-	Zoom      float64 `json:"zoom"`
-	OffsetX   float64 `json:"offsetX"`
-	OffsetY   float64 `json:"offsetY"`
+	ID        int64     `json:"id"`
+	SourceID  int64     `json:"sourceId"`
+	Name      string    `json:"name"`
+	StartMS   int64     `json:"startMs"`
+	EndMS     int64     `json:"endMs"`
+	Layout    string    `json:"layout"`
+	Zoom      float64   `json:"zoom"`
+	OffsetX   float64   `json:"offsetX"`
+	OffsetY   float64   `json:"offsetY"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (c Clip) DurationMS() int64 { return c.EndMS - c.StartMS }
 
 type Template struct {
-	ID        int64        `json:"id"`
-	UserID    int64        `json:"userId"`
-	Name      string       `json:"name"`
+	ID        int64         `json:"id"`
+	UserID    int64         `json:"userId"`
+	Name      string        `json:"name"`
 	Spec      template.Spec `json:"spec"`
-	CreatedAt time.Time    `json:"createdAt"`
-	UpdatedAt time.Time    `json:"updatedAt"`
+	CreatedAt time.Time     `json:"createdAt"`
+	UpdatedAt time.Time     `json:"updatedAt"`
 }
 
 type Render struct {
@@ -76,6 +76,7 @@ type Render struct {
 	ClipID       int64          `json:"clipId"`
 	TemplateID   *int64         `json:"templateId"`
 	VariantCount int            `json:"variantCount"`
+	Seed         int64          `json:"seed"`
 	Status       string         `json:"status"`
 	Progress     int            `json:"progress"`
 	Error        string         `json:"error"`

@@ -19,6 +19,9 @@ api/storage/
 .env.*
 !.env.example
 
+# capturas locais de bugs
+problema/
+
 # sistema
 .DS_Store
 *.log

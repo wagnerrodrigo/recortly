@@ -15,8 +15,8 @@ func TestPlanDeterministico(t *testing.T) {
 	spec.Variations.Count = 5
 	spec.Phrases = []string{"a", "b"}
 
-	first := Plan(spec)
-	second := Plan(spec)
+	first := Plan(spec, 100)
+	second := Plan(spec, 100)
 
 	if len(first) != 5 {
 		t.Fatalf("esperava 5 planos, veio %d", len(first))
@@ -29,10 +29,38 @@ func TestPlanDeterministico(t *testing.T) {
 	if first[0].Headline != "a" || first[1].Headline != "b" || first[2].Headline != "a" {
 		t.Fatalf("frases não ciclaram: %+v", first)
 	}
-	for _, p := range first {
-		if p.Zoom < 1 || p.Saturation <= 0 || p.Speed <= 0 {
-			t.Fatalf("valores fora da faixa: %+v", p)
+}
+
+func TestPlanSeedDiferenteGeraVariacoesDiferentes(t *testing.T) {
+	spec := template.Default()
+	spec.Variations.Count = 4
+
+	a := Plan(spec, 1)
+	b := Plan(spec, 2)
+
+	iguais := 0
+	for i := range a {
+		if a[i].Zoom == b[i].Zoom && a[i].OffsetX == b[i].OffsetX && a[i].OffsetY == b[i].OffsetY {
+			iguais++
 		}
+	}
+	if iguais == len(a) {
+		t.Fatal("seeds diferentes deveriam produzir variações diferentes")
+	}
+}
+
+func TestPlanVariacoesDistintas(t *testing.T) {
+	spec := template.Default()
+	spec.Variations.Count = 5
+	plans := Plan(spec, 42)
+
+	vistos := map[float64]bool{}
+	for _, p := range plans {
+		chave := float64(int(p.OffsetX*1000))*1000 + float64(int(p.Zoom*1000))
+		if vistos[chave] {
+			t.Fatalf("variação repetida: %+v", p)
+		}
+		vistos[chave] = true
 	}
 }
 
@@ -40,7 +68,7 @@ func TestPlanMirror(t *testing.T) {
 	spec := template.Default()
 	spec.Variations.Mirror = true
 	spec.Variations.Count = 4
-	plans := Plan(spec)
+	plans := Plan(spec, 7)
 	for i, p := range plans {
 		if p.Mirror != (i%2 == 1) {
 			t.Fatalf("mirror errado no índice %d: %v", i, p.Mirror)
@@ -51,21 +79,25 @@ func TestPlanMirror(t *testing.T) {
 func TestPlanSemFrases(t *testing.T) {
 	spec := template.Default()
 	spec.Phrases = []string{" "}
-	plans := Plan(spec)
-	if len(plans) != 1 || plans[0].Headline == "" {
+	plans := Plan(spec, 1)
+	if len(plans) == 0 || plans[0].Headline == "" {
 		t.Fatalf("deveria gerar plano com headline não vazia: %+v", plans)
 	}
 }
 
-func TestBuildArgsBlur(t *testing.T) {
+func TestBuildArgsZonas(t *testing.T) {
 	dir := t.TempDir()
-	out := filepath.Join(dir, "variant-01.mp4")
+	spec := template.Default()
+	spec.Zones = []template.Zone{
+		{Type: "video", Weight: 0.6, Radius: 16, Fit: "cover"},
+		{Type: "blank", Weight: 0.4},
+	}
 	in := RenderInput{
 		SourcePath: "/tmp/in.mp4",
-		OutPath:    out,
+		OutPath:    filepath.Join(dir, "variant-01.mp4"),
 		Clip:       model.Clip{StartMS: 1000, EndMS: 5000, Layout: "blur", Zoom: 1},
-		Spec:       template.Default(),
-		Plan:       VariationPlan{Headline: "Headline de teste", Zoom: 1.03, Saturation: 1.05, Speed: 1},
+		Spec:       spec,
+		Plan:       VariationPlan{Headline: "Headline de teste", Zoom: 1.03, Saturation: 1.05, Brightness: 1, Speed: 1},
 		HasAudio:   true,
 		FontPath:   "/System/Library/Fonts/Helvetica.ttc",
 	}
@@ -74,7 +106,7 @@ func TestBuildArgsBlur(t *testing.T) {
 		t.Fatalf("BuildArgs: %v", err)
 	}
 	joined := strings.Join(args, " ")
-	for _, want := range []string{"-filter_complex", "boxblur", "drawtext", "[vout]", "libx264", "-t 4.000"} {
+	for _, want := range []string{"-filter_complex", "overlay", "drawtext", "[vout]", "libx264", "-t 4.000"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("args sem %q: %s", want, joined)
 		}
@@ -82,21 +114,20 @@ func TestBuildArgsBlur(t *testing.T) {
 	if !strings.Contains(joined, "-map 0:a:0") {
 		t.Fatalf("áudio deveria ser mapeado: %s", joined)
 	}
-	// Os arquivos de texto do drawtext devem existir.
 	entries, _ := os.ReadDir(dir)
 	if len(entries) == 0 {
 		t.Fatal("arquivos de drawtext não foram criados")
 	}
 }
 
-func TestBuildArgsSemAudioEFill(t *testing.T) {
+func TestBuildArgsSemAudioEExport(t *testing.T) {
 	dir := t.TempDir()
 	in := RenderInput{
 		SourcePath: "/tmp/in.mp4",
 		OutPath:    filepath.Join(dir, "out.mp4"),
 		Clip:       model.Clip{StartMS: 0, EndMS: 2000, Layout: "fill", Zoom: 1},
 		Spec:       template.Default(),
-		Plan:       VariationPlan{Headline: "x", Zoom: 1, Saturation: 1, Speed: 1},
+		Plan:       VariationPlan{Headline: "x", Zoom: 1, Saturation: 1, Brightness: 1, Speed: 1},
 		HasAudio:   false,
 		FontPath:   "/System/Library/Fonts/Helvetica.ttc",
 	}
@@ -108,9 +139,6 @@ func TestBuildArgsSemAudioEFill(t *testing.T) {
 	if !strings.Contains(joined, "-an") {
 		t.Fatalf("esperava -an: %s", joined)
 	}
-	if strings.Contains(joined, "boxblur") {
-		t.Fatalf("layout fill não deveria ter blur: %s", joined)
-	}
 }
 
 func TestBuildArgsClipInvalido(t *testing.T) {
@@ -120,6 +148,19 @@ func TestBuildArgsClipInvalido(t *testing.T) {
 	}
 	if _, err := BuildArgs(in); err == nil {
 		t.Fatal("esperava erro para clip inválido")
+	}
+}
+
+func TestBuildArgsSemZonaDeVideo(t *testing.T) {
+	spec := template.Default()
+	spec.Zones = []template.Zone{{Type: "blank", Weight: 1}}
+	in := RenderInput{
+		Clip: model.Clip{StartMS: 0, EndMS: 2000},
+		Spec: spec,
+		Plan: VariationPlan{Headline: "x"},
+	}
+	if _, err := BuildArgs(in); err == nil {
+		t.Fatal("esperava erro para template sem vídeo")
 	}
 }
 

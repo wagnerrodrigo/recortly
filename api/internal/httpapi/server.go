@@ -16,9 +16,9 @@ import (
 )
 
 type Server struct {
-	Cfg       config.Config
-	Store     *store.Store
-	Queue     *jobs.Enqueuer
+	Cfg        config.Config
+	Store      *store.Store
+	Queue      *jobs.Enqueuer
 	StorageDir string
 }
 
@@ -52,13 +52,25 @@ func (s *Server) Router() http.Handler {
 
 		r.Get("/api/templates", s.handleListTemplates)
 		r.Post("/api/templates", s.handleCreateTemplate)
+		r.Get("/api/templates/presets", s.handlePresets)
+		r.Post("/api/templates/layout", s.handleLayout)
 		r.Get("/api/templates/{id}", s.handleGetTemplate)
 		r.Put("/api/templates/{id}", s.handleUpdateTemplate)
 		r.Delete("/api/templates/{id}", s.handleDeleteTemplate)
 
+		r.Post("/api/uploads/logo", s.handleUploadLogo)
+		r.Get("/api/logos/{name}", s.handleLogoMedia)
+
+		r.Get("/api/ai/status", s.handleAIStatus)
+		r.Post("/api/ai/phrases", s.handleAIPhrases)
+
 		r.Get("/api/renders", s.handleListRenders)
 		r.Post("/api/renders", s.handleCreateRender)
 		r.Get("/api/renders/{id}", s.handleGetRender)
+		r.Delete("/api/renders/{id}", s.handleDeleteRender)
+		r.Post("/api/renders/{id}/retry", s.handleRetryRender)
+		r.Post("/api/renders/purge", s.handlePurgeRenders)
+		r.Post("/api/renders/recover", s.handleRecoverRenders)
 		r.Get("/api/outputs/{id}/media", s.handleOutputMedia)
 
 		r.Get("/api/posts", s.handleListPosts)

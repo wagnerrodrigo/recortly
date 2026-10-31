@@ -9,17 +9,23 @@ import (
 )
 
 type Config struct {
-	Addr            string
-	DatabaseURL     string
-	RedisAddr       string
-	SessionTTLHours int
-	StorageDir      string
-	PublicBaseURL   string
+	Addr              string
+	DatabaseURL       string
+	RedisAddr         string
+	SessionTTLHours   int
+	StorageDir        string
+	PublicBaseURL     string
 	RenderConcurrency int
-	TokenKey        string
+	TokenKey          string
 
 	// Credenciais iniciais criadas no boot, se não existirem.
 	SeedUsers []SeedUser
+
+	// IA local (LM Studio, Ollama ou OpenAI compatível)
+	AIBaseURL   string
+	AIModel     string
+	AIMaxTokens int
+	AIReasoning string
 
 	// OAuth
 	YouTubeClientID     string
@@ -35,17 +41,21 @@ type SeedUser struct {
 
 func Load() Config {
 	c := Config{
-		Addr:              env("SMASHCUT_ADDR", ":8080"),
-		DatabaseURL:       env("SMASHCUT_DATABASE_URL", "postgres://smashcut:smashcut@localhost:5433/smashcut?sslmode=disable"),
-		RedisAddr:         env("SMASHCUT_REDIS_ADDR", "localhost:6380"),
-		SessionTTLHours:   envInt("SMASHCUT_SESSION_TTL_HOURS", 720),
-		StorageDir:        env("SMASHCUT_STORAGE_DIR", "storage"),
-		PublicBaseURL:     strings.TrimRight(env("SMASHCUT_PUBLIC_URL", "http://localhost:8080"), "/"),
-		RenderConcurrency: envInt("SMASHCUT_RENDER_CONCURRENCY", 1),
-		TokenKey:          env("SMASHCUT_TOKEN_KEY", "dev-insecure-key-change-me"),
-		YouTubeClientID:   env("SMASHCUT_YOUTUBE_CLIENT_ID", ""),
+		Addr:                env("SMASHCUT_ADDR", ":8080"),
+		DatabaseURL:         env("SMASHCUT_DATABASE_URL", "postgres://smashcut:smashcut@localhost:5433/smashcut?sslmode=disable"),
+		RedisAddr:           env("SMASHCUT_REDIS_ADDR", "localhost:6380"),
+		SessionTTLHours:     envInt("SMASHCUT_SESSION_TTL_HOURS", 720),
+		StorageDir:          env("SMASHCUT_STORAGE_DIR", "storage"),
+		PublicBaseURL:       strings.TrimRight(env("SMASHCUT_PUBLIC_URL", "http://localhost:8080"), "/"),
+		RenderConcurrency:   envInt("SMASHCUT_RENDER_CONCURRENCY", 1),
+		TokenKey:            env("SMASHCUT_TOKEN_KEY", "dev-insecure-key-change-me"),
+		AIBaseURL:           env("SMASHCUT_AI_BASE_URL", "http://localhost:1234/v1"),
+		AIModel:             env("SMASHCUT_AI_MODEL", "gpt-oss-20b"),
+		AIMaxTokens:         envInt("SMASHCUT_AI_MAX_TOKENS", 3000),
+		AIReasoning:         env("SMASHCUT_AI_REASONING_EFFORT", "low"),
+		YouTubeClientID:     env("SMASHCUT_YOUTUBE_CLIENT_ID", ""),
 		YouTubeClientSecret: env("SMASHCUT_YOUTUBE_CLIENT_SECRET", ""),
-		YouTubeRedirect:   env("SMASHCUT_YOUTUBE_REDIRECT", "http://localhost:3000/api/oauth/youtube/callback"),
+		YouTubeRedirect:     env("SMASHCUT_YOUTUBE_REDIRECT", "http://localhost:3000/api/oauth/youtube/callback"),
 	}
 
 	// SMASHCUT_USERS="email:senha:Nome|email2:senha2:Nome2"

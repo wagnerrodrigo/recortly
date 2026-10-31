@@ -100,7 +100,10 @@
               </div>
               <button class="text-xs text-red-600" @click="deleteClip(clip)">Excluir</button>
             </div>
-            <button class="btn btn-ghost mt-2 h-8 w-full text-xs" @click="renderClip(clip)">Gerar variações →</button>
+            <div class="mt-2 flex gap-2">
+              <NuxtLink :to="`/templates?clip=${clip.id}`" class="btn btn-primary h-8 flex-1 text-xs">Usar em template →</NuxtLink>
+              <button class="btn btn-ghost h-8 flex-1 text-xs" @click="renderClip(clip)">Gerar variações</button>
+            </div>
           </li>
         </ul>
       </section>

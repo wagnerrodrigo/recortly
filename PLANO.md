@@ -130,16 +130,23 @@ Em `.opencode/skills/`:
 
 ## 8. Status da implementação
 
-Implementado (MVP funcional):
+Implementado:
 
 - [x] Fase 0: monorepo, Docker Compose, login com sessão em cookie e layout com sidebar.
-- [x] Fase 1: upload com `ffprobe`, editor de cortes, render 9:16 (blur/fill) e fila asynq com progresso.
-- [x] Fase 2: templates com wizard, preview, headline, estilo e variações determinísticas.
+- [x] Fase 1: upload com `ffprobe`, editor de cortes, render 9:16 e fila asynq com progresso.
+- [x] Fluxo contínuo por template em 7 passos (Perfil, Zonas, Frases, Mídia, Estilo, Variações, Gerar).
+- [x] Presets de template (Twitter/X, Meme, Vídeo viral, em branco) e zonas empilhadas com peso.
+- [x] Headline com quebra automática de linha e faixa de fundo; perfil com avatar circular.
+- [x] Variações com seed por render, recorte, zoom, saturação, brilho, velocidade e espelhamento.
+- [x] Geração de frases com IA local (LM Studio/Ollama, API compatível com OpenAI).
 - [x] Origem e licença obrigatórias, crédito automático e remoção de fonte.
 - [x] YouTube: OAuth + upload via Data API (precisa de credenciais no `.env`).
+- [x] Estabilidade do render: proxy H.264 automático para VP9/AV1/4K, watchdog de 90s,
+      lock de worker único, recuperação no boot e botão "Tentar de novo".
+- [x] Exclusão de renders (individual e em lote) preservando o histórico de publicações.
 - [ ] Instagram e TikTok: adaptadores prontos, faltam app aprovado e credenciais.
-- [ ] Fase 5: legenda automática por transcrição.
-- [ ] Busca global, thumbnails e cancelamento de render na UI.
+- [ ] Zonas de imagem.
+- [ ] Legenda automática por transcrição.
 
 ## 9. Próximos passos
 

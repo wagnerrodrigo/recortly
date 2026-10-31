@@ -2,8 +2,8 @@ package store
 
 import (
 	"context"
-	"time"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/smashcut/smashcut/api/internal/model"
@@ -11,24 +11,26 @@ import (
 
 func (s *Store) CreateRender(ctx context.Context, clipID int64, templateID *int64, variants int) (model.Render, error) {
 	var r model.Render
+	seed := time.Now().UnixNano()
 	err := s.Pool.QueryRow(ctx,
-		`INSERT INTO renders (clip_id, template_id, variant_count) VALUES ($1,$2,$3)
-		 RETURNING id, clip_id, template_id, variant_count, status, progress, error, created_at, finished_at`,
-		clipID, templateID, variants).
-		Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Status, &r.Progress, &r.Error, &r.CreatedAt, &r.FinishedAt)
+		`INSERT INTO renders (clip_id, template_id, variant_count, seed) VALUES ($1,$2,$3,$4)
+		 RETURNING id, clip_id, template_id, variant_count, seed, status, progress, error, created_at, finished_at`,
+		clipID, templateID, variants, seed).
+		Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Seed, &r.Status,
+			&r.Progress, &r.Error, &r.CreatedAt, &r.FinishedAt)
 	return r, err
 }
 
 func (s *Store) GetRender(ctx context.Context, userID, id int64) (model.Render, error) {
 	var r model.Render
 	err := s.Pool.QueryRow(ctx,
-		`SELECT r.id, r.clip_id, r.template_id, r.variant_count, r.status, r.progress, r.error,
+		`SELECT r.id, r.clip_id, r.template_id, r.variant_count, r.seed, r.status, r.progress, r.error,
 		        r.created_at, r.finished_at
 		 FROM renders r
 		 JOIN clips c ON c.id = r.clip_id
 		 JOIN sources s ON s.id = c.source_id
 		 WHERE r.id=$1 AND s.user_id=$2`, id, userID).
-		Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Status, &r.Progress,
+		Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Seed, &r.Status, &r.Progress,
 			&r.Error, &r.CreatedAt, &r.FinishedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return r, ErrNotFound
@@ -48,9 +50,9 @@ func (s *Store) GetRender(ctx context.Context, userID, id int64) (model.Render, 
 func (s *Store) RenderForWorker(ctx context.Context, id int64) (model.Render, error) {
 	var r model.Render
 	err := s.Pool.QueryRow(ctx,
-		`SELECT id, clip_id, template_id, variant_count, status, progress, error, created_at, finished_at
+		`SELECT id, clip_id, template_id, variant_count, seed, status, progress, error, created_at, finished_at
 		 FROM renders WHERE id=$1`, id).
-		Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Status, &r.Progress,
+		Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Seed, &r.Status, &r.Progress,
 			&r.Error, &r.CreatedAt, &r.FinishedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return r, ErrNotFound
@@ -63,7 +65,7 @@ func (s *Store) ListRenders(ctx context.Context, userID int64, limit int) ([]mod
 		limit = 50
 	}
 	rows, err := s.Pool.Query(ctx,
-		`SELECT r.id, r.clip_id, r.template_id, r.variant_count, r.status, r.progress, r.error,
+		`SELECT r.id, r.clip_id, r.template_id, r.variant_count, r.seed, r.status, r.progress, r.error,
 		        r.created_at, r.finished_at, c.source_id
 		 FROM renders r
 		 JOIN clips c ON c.id = r.clip_id
@@ -78,7 +80,7 @@ func (s *Store) ListRenders(ctx context.Context, userID int64, limit int) ([]mod
 	for rows.Next() {
 		var r model.Render
 		var srcID int64
-		if err := rows.Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Status,
+		if err := rows.Scan(&r.ID, &r.ClipID, &r.TemplateID, &r.VariantCount, &r.Seed, &r.Status,
 			&r.Progress, &r.Error, &r.CreatedAt, &r.FinishedAt, &srcID); err != nil {
 			return nil, err
 		}
@@ -169,4 +171,34 @@ func (s *Store) DeleteOldRenders(ctx context.Context, days int) (int64, error) {
 		return 0, err
 	}
 	return tag.RowsAffected(), nil
+}
+
+// MarkStaleRendersFailed encerra renders que ficaram marcados como "running"
+// quando o worker foi reiniciado ou travou.
+func (s *Store) MarkStaleRendersFailed(ctx context.Context, message string) (int64, error) {
+	tag, err := s.Pool.Exec(ctx,
+		`UPDATE renders SET status='failed'::render_status, error=$1, finished_at=now()
+		 WHERE status='running'`, message)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
+}
+
+// QueuedRenders devolve renders parados na fila (para reenfileirar no boot).
+func (s *Store) QueuedRenders(ctx context.Context) ([]int64, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT id FROM renders WHERE status='queued' ORDER BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }
